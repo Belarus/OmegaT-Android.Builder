@@ -1,0 +1,18 @@
+<project default="jar">
+
+    <target name="clean">
+        <delete dir="dist" />
+    </target>
+
+    <target name="jar" depends="clean">
+        <mkdir dir="dist" />
+        <jar jarfile="dist/android_installer.jar" basedir="../Installer/classes"/>
+        <jar jarfile="dist/android_compile.jar" basedir="classes">
+            <zipfileset src="lib/commons-io-1.4.jar"/>
+            <zipfileset src="lib/junit-4.8.2.jar"/>
+            <zipfileset src="../../OmegaT/dist/OmegaT.jar"/>
+            <zipfileset src="lib/apktool-cli-1.3.3-SNAPSHOT-jar-with-deps.jar"/>
+            <zipfileset src="dist/android_installer.jar"/>
+        </jar>
+    </target>
+</project>

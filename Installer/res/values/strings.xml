@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">Android па-беларуску</string>
+	<string name="btnNext">Далей</string>
+	<string name="btnStop">Спыніць</string>
+	<string name="btnStopping">Спыняем...</string>
+	<string name="btnFinish">Скончыць</string>
+	<string name="btnSelectAll">Усё</string>
+	<string name="btnDeselectAll">Нічога</string>
+	<string name="opCheckInstalled">Спраўджваем усталяваныя пераклады...</string>
+	<string name="opCheckNew">Ці ёсьць новыя пераклады?..</string>
+	<string name="opDownloadTrans">Спампоўваем пераклады...</string>
+    <string name="opUploadTrans">Зацягваем неперакладзенае...</string>
+	<string name="opDownload">Сцягваем...</string>
+	<string name="opInstall">Усталёўваем...</string>
+	<string name="opInstallTranslation">Усталёўваем пераклад...</string>
+	<string name="opSetup">Зьмяняем моўныя налады...</string>
+	<string name="opRead">Чытаем...</string>
+	<string name="textIntro">Гэта ўсталёўнік беларускае мовы.\n\nЗараз мы спраўдзім усталяваныя пераклады, абнавім пераклад...\n\nУВАГА! Усталёўка перакладу можа сапсаваць усталяваныя на тэлефоне праграмы. Дазвольце USB debugging у наладах тэлефону перад усталяваньнем, каб можна было аднавіць сыстэму.\n\nПадрабязнасьці — на http://mounik.org/w/Android</string>
+	<string name="textStopped">Усталёўка спыненая. Можаце запусьціць пазьней...</string>
+	<string name="textError">Памылка: </string>
+	<string name="textFinished">Усталявана</string>
+    <string name="textDownloadSize">Спампуецца: $0k</string>
+    <string name="textUploadSize">Запампуецца: $0k</string>
+    <string name="msgRoot">Каб усталяваць пераклад, вам трэба мець root-доступ. Яго можна атрымаць праз z4root (http://android.mounik.org/z4root.1.3.0.apk)</string>
+    <string name="textLabel3">Пазначце, што ўсталёўваць</string>
+</resources>

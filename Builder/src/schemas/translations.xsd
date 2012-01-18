@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="control.android" targetNamespace="control.android" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="translation">
+		<xs:annotation>
+			<xs:documentation>Comment describing your root element</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="app" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="app">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="cyanogen" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attribute name="dirName" type="xs:string" use="required"/>
+			<xs:attribute name="packageName" type="xs:string"/>
+			<xs:attribute name="translated" type="xs:boolean" default="false"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="cyanogen">
+		<xs:complexType>
+			<xs:attribute name="src" type="xs:string" use="required"/>
+			<xs:attribute name="outSuffix" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
