@@ -1,0 +1,5 @@
+*.img
+*.ini
+*kernel*
+root
+system
