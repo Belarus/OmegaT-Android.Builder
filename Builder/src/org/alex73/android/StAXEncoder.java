@@ -8,8 +8,6 @@ import java.util.Comparator;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamWriter;
 
-import junit.framework.Assert;
-
 import org.alex73.android.StyledString.Tag;
 import org.alex73.android.arsc.Config;
 import org.alex73.android.arsc.Entry;
@@ -162,7 +160,7 @@ public class StAXEncoder implements IEncoder {
                     for (Entry e : c.getEntries()) {
                         if (e instanceof Entry.ComplexEntry) {
                             Entry.ComplexEntry ec = (Entry.ComplexEntry) e;
-                            Assert.assertTrue(isPluralsArray(ec));
+                            Assert.assertTrue("", isPluralsArray(ec));
                             hasData = true;
                             wr.writeCharacters("    ");
                             wr.writeStartElement("plurals");
@@ -217,7 +215,7 @@ public class StAXEncoder implements IEncoder {
                     wr.writeStartElement(ta[0]);
                     for (int k = 1; k < ta.length; k++) {
                         int pos = ta[k].indexOf('=');
-                        Assert.assertTrue(pos > 0);
+                        Assert.assertTrue("", pos > 0);
                         wr.writeAttribute(ta[k].substring(0, pos), ta[k].substring(pos + 1));
                     }
                 }
@@ -261,7 +259,7 @@ public class StAXEncoder implements IEncoder {
     }
 
     protected static boolean isStringArray(Entry.ComplexEntry kvs) {
-        Assert.assertEquals(ResArrayValue.BAG_KEY_ARRAY_START, kvs.values[0].key);
+        Assert.assertEquals("", ResArrayValue.BAG_KEY_ARRAY_START, kvs.values[0].key);
         boolean hasStrings = false;
         boolean hasOther = false;
         for (Entry.KeyValue kv : kvs.values) {
@@ -275,9 +273,9 @@ public class StAXEncoder implements IEncoder {
     }
 
     protected static boolean isPluralsArray(Entry.ComplexEntry kvs) {
-        Assert.assertTrue(kvs.values.length <= ARSC.QUANTITY_MAP.length);
+        Assert.assertTrue("", kvs.values.length <= ARSC.QUANTITY_MAP.length);
         for (Entry.KeyValue kv : kvs.values) {
-            Assert.assertTrue(kv.key >= ResPluralsValue.BAG_KEY_PLURALS_START
+            Assert.assertTrue("", kv.key >= ResPluralsValue.BAG_KEY_PLURALS_START
                     && kv.key <= ResPluralsValue.BAG_KEY_PLURALS_END);
         }
         return true;

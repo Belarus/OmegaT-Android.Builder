@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import junit.framework.Assert;
+import org.alex73.android.Assert;
 
 public class Resources extends BaseChunked {
     protected static final Set<String> KNOWN_TYPES = new HashSet<String>(Arrays.asList(

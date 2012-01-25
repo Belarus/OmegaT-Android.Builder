@@ -2,7 +2,7 @@ package org.alex73.android.arsc;
 
 import java.util.Arrays;
 
-import junit.framework.Assert;
+import org.alex73.android.Assert;
 
 public class ChunkReader {
     private final byte[] in;
@@ -107,7 +107,7 @@ public class ChunkReader {
         } while (true);
         if (fixed) {
             while (length-- > 0) {
-                Assert.assertEquals(0, readShort());
+                Assert.assertEquals("", 0, readShort());
             }
         }
         return string.toString();

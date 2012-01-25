@@ -21,8 +21,6 @@ import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 
-import junit.framework.Assert;
-
 import org.alex73.android.arsc.ChunkReader;
 import org.alex73.android.arsc.Config;
 import org.alex73.android.arsc.Entry;
@@ -72,7 +70,7 @@ public class StAXDecoder implements IDecoder {
                 if ("string".equals(eStart.getName().getLocalPart())) {
                     String name = eStart.getAttributeByName(new QName("name")).getValue();
                     StyledString str = read(rd);
-                    Assert.assertNull(strings.put(name, str));
+                    Assert.assertNull("", strings.put(name, str));
                 }
                 break;
             }
@@ -112,7 +110,7 @@ public class StAXDecoder implements IDecoder {
                 if ("string-array".equals(eStart.getName().getLocalPart())) {
                     String name = eStart.getAttributeByName(new QName("name")).getValue();
                     array = new ArrayList<StyledString>();
-                    Assert.assertNull(arrays.put(name, array));
+                    Assert.assertNull("", arrays.put(name, array));
                 } else if ("item".equals(eStart.getName().getLocalPart())) {
                     StyledString str = read(rd);
                     array.add(str);
@@ -128,7 +126,7 @@ public class StAXDecoder implements IDecoder {
                 Entry.ComplexEntry ec = (Entry.ComplexEntry) e;
                 List<StyledString> str = arrays.get(e.getName());
                 if (str != null) {
-                    Assert.assertEquals(ec.values.length, str.size());
+                    Assert.assertEquals("", ec.values.length, str.size());
                     for (int i = 0; i < ec.values.length; i++) {
                         ec.values[i].vData = rs.getStringTable().addStyledString(str.get(i));
                     }
@@ -158,7 +156,7 @@ public class StAXDecoder implements IDecoder {
                 if ("plurals".equals(eStart.getName().getLocalPart())) {
                     String name = eStart.getAttributeByName(new QName("name")).getValue();
                     plural = new TreeMap<String, StyledString>();
-                    Assert.assertNull(plurals.put(name, plural));
+                    Assert.assertNull("", plurals.put(name, plural));
                 } else if ("item".equals(eStart.getName().getLocalPart())) {
                     String quantity = eStart.getAttributeByName(new QName("quantity")).getValue();
                     StyledString str = read(rd);
@@ -175,7 +173,7 @@ public class StAXDecoder implements IDecoder {
                 Entry.ComplexEntry ec = (Entry.ComplexEntry) e;
                 Map<String, StyledString> str = plurals.get(e.getName());
                 if (str != null) {
-                    Assert.assertEquals(ec.values.length, str.size());
+                    Assert.assertEquals("", ec.values.length, str.size());
                     for (int i = 0; i < ec.values.length; i++) {
                         String q = ARSC.QUANTITY_MAP[ec.values[i].key - ARSC.BAG_KEY_PLURALS_START];
                         ec.values[i].vData = rs.getStringTable().addStyledString(str.get(q));
@@ -190,12 +188,12 @@ public class StAXDecoder implements IDecoder {
         for (Config c : pkg.getAllConfigs()) {
             if (typeName.equals(c.getParentType().getName())) {
                 if (c.getFlags().isEmpty()) {
-                    Assert.assertNull(orig);
+                    Assert.assertNull("", orig);
                     orig = c;
                 }
             }
         }
-        Assert.assertNotNull(orig);
+        Assert.assertNotNull("", orig);
 
         byte[] readed = orig.getOriginalBytes();
 
@@ -215,9 +213,9 @@ public class StAXDecoder implements IDecoder {
 
         XMLEvent e;
         e = rd.nextEvent();
-        Assert.assertEquals(XMLEvent.START_DOCUMENT, e.getEventType());
+        Assert.assertEquals("", XMLEvent.START_DOCUMENT, e.getEventType());
         e = rd.nextEvent();
-        Assert.assertEquals(XMLEvent.START_ELEMENT, e.getEventType());
+        Assert.assertEquals("", XMLEvent.START_ELEMENT, e.getEventType());
 
         return read(rd);
     }

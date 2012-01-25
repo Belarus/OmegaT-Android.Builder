@@ -12,8 +12,7 @@
 	<classpathentry kind="lib" path="lib-apktool/smali-1.2.4-brut3.jar"/>
 	<classpathentry kind="lib" path="lib-apktool/util-1.2.4-brut3.jar"/>
 	<classpathentry kind="lib" path="lib/apktool-cli-1.3.3-SNAPSHOT-jar-with-deps.jar"/>
-	<classpathentry kind="lib" path="lib/junit-4.8.2.jar"/>
-	<classpathentry kind="lib" path="E:/gits/Android.OmegaT/Android.OmegaT/OmegaT.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/android-installer"/>
+	<classpathentry kind="lib" path="lib/OmegaT.jar" sourcepath="/OmegaT trunk"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

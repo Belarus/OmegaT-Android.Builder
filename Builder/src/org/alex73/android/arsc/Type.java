@@ -2,7 +2,7 @@ package org.alex73.android.arsc;
 
 import java.util.Arrays;
 
-import junit.framework.Assert;
+import org.alex73.android.Assert;
 
 public class Type extends BaseChunked {
     boolean[] mMissingResSpecs;
@@ -28,7 +28,7 @@ public class Type extends BaseChunked {
         this.parent = parent;
 
         id = rd.readInt();
-        Assert.assertTrue(id > 0 && id < 255);
+        Assert.assertTrue("", id > 0 && id < 255);
 
         int entryCount = rd.readInt();
 

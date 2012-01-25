@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import junit.framework.Assert;
+import org.alex73.android.Assert;
 
 public class ChunkWriter {
     private final ChunkHeader header;
@@ -22,7 +22,7 @@ public class ChunkWriter {
     }
 
     public byte[] getBytes() {
-        Assert.assertTrue(closed);
+        Assert.assertTrue("", closed);
         return Arrays.copyOfRange(buffer, 0, bufferSize);
     }
 
@@ -92,7 +92,7 @@ public class ChunkWriter {
     }
 
     public void writeNulEndedString(int fixedLength, String text) {
-        Assert.assertTrue(text.length() < fixedLength);
+        Assert.assertTrue("",text.length() < fixedLength);
 
         for (char c : text.toCharArray()) {
             writeShort((short) c);

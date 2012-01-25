@@ -2,8 +2,7 @@ package org.alex73.android.arsc;
 
 import java.math.BigInteger;
 
-import junit.framework.Assert;
-
+import org.alex73.android.Assert;
 import org.alex73.android.StyledString;
 
 import android.util.TypedValue;
@@ -73,7 +72,7 @@ public class Config extends BaseChunked {
                 country[0] = 0;
                 country[1] = 0;
             } else {
-                Assert.fail();
+                Assert.fail("");
             }
         }
 
@@ -110,7 +109,7 @@ public class Config extends BaseChunked {
     }
 
     public void read(Package pkg) {
-        Assert.assertEquals(rd.header.chunkType, 0x201);
+        Assert.assertEquals("", rd.header.chunkType, 0x201);
 
         typeId = rd.readInt();
         int entryCount = rd.readInt();
@@ -177,7 +176,7 @@ public class Config extends BaseChunked {
     protected Flags readConfigFlags() {
         Flags f = new Flags();
         f.size = rd.readInt();
-        Assert.assertTrue(f.size >= 28);
+        Assert.assertTrue("", f.size >= 28);
 
         f.mcc = rd.readShort();
         f.mnc = rd.readShort();
@@ -192,13 +191,13 @@ public class Config extends BaseChunked {
         f.keyboard = rd.readByte();
         f.navigation = rd.readByte();
         f.inputFlags = rd.readByte();
-        Assert.assertEquals(0, rd.readByte());// was skip
+        Assert.assertEquals("", 0, rd.readByte());// was skip
 
         f.screenWidth = rd.readShort();
         f.screenHeight = rd.readShort();
 
         f.sdkVersion = rd.readShort();
-        Assert.assertEquals(0, rd.readShort());// was skip
+        Assert.assertEquals("", 0, rd.readShort());// was skip
 
         f.screenLayout = 0;
         f.uiMode = 0;
@@ -270,23 +269,23 @@ public class Config extends BaseChunked {
 
         Entry e;
         if ((entryFlags & ENTRY_FLAG_COMPLEX) == 0) {
-            Assert.assertEquals(sz, 8);
+            Assert.assertEquals("", sz, 8);
             // simple value
             Entry.SimpleEntry es = new Entry.SimpleEntry();
             e = es;
 
             short vSize = rd.readShort();// mIn.skipCheckShort((short) 8);
-            Assert.assertEquals(8, vSize);
+            Assert.assertEquals("", 8, vSize);
 
             byte vZero = rd.readByte();
-            Assert.assertEquals(0, vZero);
+            Assert.assertEquals("", 0, vZero);
 
             es.vType = rd.readByte();
             es.vData = rd.readInt();
 
             es.styledStringValue = readValue(vSize, es.vType, es.vData);
         } else {
-            Assert.assertEquals(sz, 16);
+            Assert.assertEquals("", sz, 16);
             // complex value
             Entry.ComplexEntry ec = new Entry.ComplexEntry();
             e = ec;
@@ -352,10 +351,10 @@ public class Config extends BaseChunked {
             e.values[i].key = rd.readInt();
 
             short vSize = rd.readShort();// mIn.skipCheckShort((short) 8);
-            Assert.assertEquals(8, vSize);
+            Assert.assertEquals("", 8, vSize);
 
             byte vZero = rd.readByte();
-            Assert.assertEquals(0, vZero);
+            Assert.assertEquals("", 0, vZero);
 
             e.values[i].vType = rd.readByte();
             e.values[i].vData = rd.readInt();

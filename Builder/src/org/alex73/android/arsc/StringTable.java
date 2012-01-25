@@ -10,10 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.alex73.android.Assert;
 import org.alex73.android.StyledString;
-import org.alex73.android.arsc.ChunkWriter.LaterInt;
-
-import junit.framework.Assert;
 
 public class StringTable extends BaseChunked {
     private static final int UTF8_FLAG = 0x00000100;
@@ -98,8 +96,8 @@ public class StringTable extends BaseChunked {
             styles.add(st);
         }
 
-        Assert.assertEquals(stringCount, strings.size());
-        Assert.assertEquals(styleOffsetCount, styles.size());
+        Assert.assertEquals("", stringCount, strings.size());
+        Assert.assertEquals("", styleOffsetCount, styles.size());
 
         read_stringOffsets = null;
         read_strings = null;
@@ -202,7 +200,7 @@ public class StringTable extends BaseChunked {
     }
 
     static byte[] constructVarint(int v) {
-        Assert.assertTrue(v < 32768);
+        Assert.assertTrue("", v < 32768);
         if (v < 0x80) {
             return new byte[] { (byte) v };
         } else {
@@ -252,7 +250,7 @@ public class StringTable extends BaseChunked {
                 tags[i].start = str.tags[i].start;
                 tags[i].end = str.tags[i].end;
                 tags[i].tagIndex = strings.indexOf(str.tags[i].tagName);
-                Assert.assertTrue(tags[i].tagIndex >= 0);
+                Assert.assertTrue("", tags[i].tagIndex >= 0);
             }
             while (styles.size() < strings.size() - 1) {
                 styles.add(null);
@@ -326,7 +324,7 @@ public class StringTable extends BaseChunked {
         if (count == 0) {
             return null;
         }
-        Assert.assertEquals(0, count % 3);
+        Assert.assertEquals("", 0, count % 3);
 
         return Arrays.copyOfRange(read_styles, offset, offset + count);
     }

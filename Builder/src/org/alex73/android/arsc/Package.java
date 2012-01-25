@@ -3,7 +3,7 @@ package org.alex73.android.arsc;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
+import org.alex73.android.Assert;
 
 public class Package extends BaseChunked {
     private int id;
@@ -41,7 +41,7 @@ public class Package extends BaseChunked {
         this.parent = parent;
 
         id = rd.readInt();
-        Assert.assertTrue(id > 0 && id < 255);
+        Assert.assertTrue("", id > 0 && id < 255);
 
         name = rd.readNulEndedString(128, true);
         int typeNameStrings = rd.readInt();
@@ -55,8 +55,8 @@ public class Package extends BaseChunked {
         specNames = new StringTable(new ChunkReader(rd));
         specNames.read();
 
-        Assert.assertEquals(typeNameCount, typeNames.getStringCount());
-        Assert.assertEquals(specNameCount, specNames.getStringCount());
+        Assert.assertEquals("", typeNameCount, typeNames.getStringCount());
+        Assert.assertEquals("", specNameCount, specNames.getStringCount());
 
         while (rd.left() > 0) {
             ChunkReader rd2 = new ChunkReader(rd);
