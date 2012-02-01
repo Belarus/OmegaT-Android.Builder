@@ -47,15 +47,25 @@ public class LocalStorage {
     public List<File> getLocalFiles() throws Exception {
         List<File> files = new ArrayList<File>();
 
-        appendApks(FRAMEWORK_DIR, files);
-        appendApks(APP_DIR, files);
-        appendApks(USER_DIR, files);
+        appendApks(APP_DIR, files, FILTER_APK);
+        appendApks(FRAMEWORK_DIR, files, FILTER_APK);
+        appendApks(USER_DIR, files, FILTER_APK);
 
         return files;
     }
 
-    private void appendApks(File dir, List<File> out) {
-        File[] files = dir.listFiles(FILTER_APK);
+    public List<File> getLocalFilesNew() throws Exception {
+        List<File> files = new ArrayList<File>();
+
+        appendApks(APP_DIR, files, FILTER_APK_NEW);
+        appendApks(FRAMEWORK_DIR, files, FILTER_APK_NEW);
+        appendApks(USER_DIR, files, FILTER_APK_NEW);
+
+        return files;
+    }
+
+    private void appendApks(File dir, List<File> out, FileFilter filter) {
+        File[] files = dir.listFiles(filter);
         if (files != null) {
             for (File f : files) {
                 out.add(f);
@@ -64,7 +74,8 @@ public class LocalStorage {
     }
 
     static Pattern RE_VERSION1 = Pattern.compile("([0-9a-f]{40})_([0-9a-f]{40})");
-    static Pattern RE_VERSION2 = Pattern.compile("v2: origApkSha1=([0-9a-f]{40}) transARSCSha1=([0-9a-f]{40})");
+    static Pattern RE_VERSION2 = Pattern
+            .compile("v2: origApkSha1=([0-9a-f]{40}) transARSCSha1=([0-9a-f]{40})");
 
     byte[] buffer = new byte[1024];
 
@@ -252,10 +263,29 @@ public class LocalStorage {
         }
     }
 
+    public void patchFile(File f, byte[] translatedResources) throws Exception {
+        File fo = new File(f.getAbsolutePath() + ".new");
+        createReadableFile(fo);
+        new ApkUpdater().replace(f, fo, new byte[0], translatedResources);
+
+        fo.setLastModified(f.lastModified());
+        if (!f.delete()) {
+            throw new Exception("Error delete");
+        }
+        if (!fo.renameTo(f)) {
+            throw new Exception("Error renaming");
+        }
+    }
+
     protected void backupApk(File f) throws Exception {
         File outFile = new File(DIR_STORE + "/backup/" + f.getName());
+        if (outFile.exists()) {
+            return;
+        }
         outFile.getParentFile().mkdirs();
-        FileOutputStream out = new FileOutputStream(outFile);
+
+        File outFileNew = new File(DIR_STORE + "/backup/new-" + f.getName());
+        FileOutputStream out = new FileOutputStream(outFileNew);
         try {
             FileInputStream in = new FileInputStream(f);
             try {
@@ -266,6 +296,7 @@ public class LocalStorage {
         } finally {
             out.close();
         }
+        outFileNew.renameTo(outFile);
     }
 
     /**
@@ -284,7 +315,7 @@ public class LocalStorage {
         final StringBuilder systemDevice = new StringBuilder();
 
         BufferedReader rd = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/mounts"),
-                "UTF-8"));
+                "UTF-8"), 8192);
         String s;
         while ((s = rd.readLine()) != null) {
             String[] a = s.split("\\s+");
@@ -346,6 +377,11 @@ public class LocalStorage {
     static FileFilter FILTER_APK = new FileFilter() {
         public boolean accept(File pathname) {
             return pathname.isFile() && pathname.getName().endsWith(".apk");
+        }
+    };
+    static FileFilter FILTER_APK_NEW = new FileFilter() {
+        public boolean accept(File pathname) {
+            return pathname.isFile() && pathname.getName().endsWith(".apk.new");
         }
     };
 }

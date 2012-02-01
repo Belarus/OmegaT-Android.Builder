@@ -41,7 +41,7 @@ public class RemoteSite {
         HttpEntity responseEntity = response.getEntity();
         try {
             BufferedReader rd = new BufferedReader(
-                    new InputStreamReader(responseEntity.getContent(), "UTF-8"));
+                    new InputStreamReader(responseEntity.getContent(), "UTF-8"), 8192);
             try {
                 String s;
                 while ((s = rd.readLine()) != null) {
@@ -106,7 +106,7 @@ public class RemoteSite {
         HttpEntity responseEntity = response.getEntity();
         try {
             BufferedReader rd = new BufferedReader(
-                    new InputStreamReader(responseEntity.getContent(), "UTF-8"));
+                    new InputStreamReader(responseEntity.getContent(), "UTF-8"), 8192);
             try {
                 String s;
                 while ((s = rd.readLine()) != null) {

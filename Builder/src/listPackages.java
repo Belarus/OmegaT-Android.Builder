@@ -36,7 +36,7 @@ public class listPackages {
                     if (r == null)
                         continue;
                     ManifestInfo mi = new ManifestInfo(m2);
-                    packages.put(mi.packageName, ze.getName());
+                    packages.put(mi.getPackageName(), ze.getName());
                     System.out.println(Utils.sha1(r) + '_'
                             + ze.getName().substring(ze.getName().lastIndexOf('/') + 1) + "="
                             + Utils.sha1(apk));

@@ -31,8 +31,6 @@ public class Step1 extends Step {
                 }
             });
         } else {
-            remote.requestTranslatedPackages(ui.translatedPackages);
-
             ui.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -41,7 +39,7 @@ public class Step1 extends Step {
             });
             setNext(new OnClickListener() {
                 public void onClick(View view) {
-                    new Step2(ui).doit();
+                    new Step4(ui).doit();
                 }
             });
         }

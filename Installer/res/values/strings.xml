@@ -7,7 +7,8 @@
 	<string name="btnFinish">Скончыць</string>
 	<string name="btnSelectAll">Усё</string>
 	<string name="btnDeselectAll">Нічога</string>
-	<string name="opCheckInstalled">Спраўджваем усталяваныя пераклады...</string>
+	<string name="opCheckInstalled">Вызначаемся што перакладаць...</string>
+	<string name="opReadTranslation">Чытаем пераклад...</string>
 	<string name="opCheckNew">Ці ёсьць новыя пераклады?..</string>
 	<string name="opDownloadTrans">Спампоўваем пераклады...</string>
     <string name="opUploadTrans">Зацягваем неперакладзенае...</string>
@@ -16,7 +17,7 @@
 	<string name="opInstallTranslation">Усталёўваем пераклад...</string>
 	<string name="opSetup">Зьмяняем моўныя налады...</string>
 	<string name="opRead">Чытаем...</string>
-	<string name="textIntro">Гэта ўсталёўнік беларускае мовы.\n\nЗараз мы спраўдзім усталяваныя пераклады, абнавім пераклад...\n\nУВАГА! Усталёўка перакладу можа сапсаваць усталяваныя на тэлефоне праграмы. Дазвольце USB debugging у наладах тэлефону перад усталяваньнем, каб можна было аднавіць сыстэму.\n\nПадрабязнасьці — на http://mounik.org/w/Android</string>
+	<string name="textIntro">Гэта ўсталёўнік беларускае мовы.\n\nЗараз мы паспрабуем усталяваць пераклад. Магчыма, тэлефон перастартуе ці спытаеццца PIN код...\n\nУВАГА! Усталёўка перакладу можа сапсаваць усталяваныя на тэлефоне праграмы. Дазвольце USB debugging у наладах тэлефону перад усталяваньнем, каб можна было аднавіць сыстэму.\n\nПадрабязнасьці — на http://mounik.org/w/Android</string>
 	<string name="textStopped">Усталёўка спыненая. Можаце запусьціць пазьней...</string>
 	<string name="textError">Памылка: </string>
 	<string name="textFinished">Усталявана</string>
