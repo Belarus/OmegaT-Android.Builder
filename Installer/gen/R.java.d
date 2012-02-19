@@ -8,5 +8,6 @@ E:\gits\Android.Builder\Installer\res\layout\step2.xml \
 E:\gits\Android.Builder\Installer\res\layout\step3.xml \
 E:\gits\Android.Builder\Installer\res\layout\step4.xml \
 E:\gits\Android.Builder\Installer\res\layout\step5.xml \
+E:\gits\Android.Builder\Installer\res\raw\translation.bin \
 E:\gits\Android.Builder\Installer\res\values\strings.xml \
 E:\gits\Android.Builder\Installer\AndroidManifest.xml \

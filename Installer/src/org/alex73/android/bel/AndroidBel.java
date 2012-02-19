@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.alex73.android.arsc2.Translation;
+
 import android.app.Activity;
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -16,6 +18,7 @@ public class AndroidBel extends Activity {
 
     Set<String> translatedPackages = new HashSet<String>();
     List<FileInfo> filesForProcess = new ArrayList<FileInfo>();
+    Translation translation;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

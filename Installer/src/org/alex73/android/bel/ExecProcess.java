@@ -27,7 +27,7 @@ public class ExecProcess {
             int status = process.waitFor();
             if (status == 0) {
                 BufferedReader rd = new BufferedReader(new InputStreamReader(process.getInputStream(),
-                        "UTF-8"));
+                        "UTF-8"), 8192);
                 try {
                     String s;
                     while ((s = rd.readLine()) != null) {
@@ -38,7 +38,7 @@ public class ExecProcess {
                 }
             } else {
                 BufferedReader rd = new BufferedReader(new InputStreamReader(process.getErrorStream(),
-                        "UTF-8"));
+                        "UTF-8"), 8192);
                 try {
                     String s = rd.readLine();
                     throw new Exception(s);

@@ -1,8 +1,16 @@
 package org.alex73.android.bel;
 
 import java.io.File;
+import java.io.InputStream;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
-import android.os.Build;
+import org.alex73.android.arsc2.ResourceProcessor;
+import org.alex73.android.arsc2.Translation;
+import org.alex73.android.arsc2.reader.ChunkReader2;
+
 import android.text.method.ScrollingMovementMethod;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -30,83 +38,66 @@ public class Step4 extends Step {
 
     @Override
     protected void process() throws Exception {
-        setProgressTotal(ui.countVersions(FileInfo.STATUS.NONTRANSLATED)
-                + ui.countVersions(FileInfo.STATUS.UPDATE) * 2);
+        setProgressTotal(2);
 
-        showOperation(R.string.opUploadTrans);
-        showFile("");
-        for (FileInfo fi : ui.filesForProcess) {
+        showOperation(R.string.opReadTranslation);
+        incProgress();
+        InputStream inTr = ui.getResources().openRawResource(R.raw.translation);
+        if (inTr == null) {
+            throw new Exception("Translation not found");
+        }
+        try {
+            ui.translation = new Translation(new GZIPInputStream(inTr));
+        } finally {
+            inTr.close();
+        }
+
+        showOperation(R.string.opCheckInstalled);
+        incProgress();
+
+        // delete .new files
+        List<File> filesOldNew = local.getLocalFilesNew();
+        for (File f : filesOldNew) {
+            f.delete();
+        }
+
+        List<File> files = local.getLocalFiles();
+        // remove non-translated apk from list
+        for (int i = 0; i < files.size(); i++) {
             if (stopped) {
                 return;
             }
-            if (fi.remoteStatus != FileInfo.STATUS.NONTRANSLATED) {
-                continue;
+            if (!needTranslate(files.get(i))) {
+                files.remove(i);
+                i--;
             }
-            incProgress();
-
-            showFile(fi.localFile.getName());
-
-            remote.upload(fi.localFile, fi.remoteFilename, fi.transferSize);
         }
 
-        showOperation(R.string.opDownloadTrans);
-        showFile("");
-
-        for (FileInfo fi : ui.filesForProcess) {
-            if (stopped) {
-                return;
-            }
-            if (fi.remoteStatus != FileInfo.STATUS.UPDATE) {
-                continue;
-            }
-            incProgress();
-
-            showFile(fi.localFile.getName());
-
-            String localName = fi.remoteFilename.replace(".arsc.gz", ".arsc");
-            if (!local.existFile(localName)) {
-                // download file
-                showOperation(R.string.opDownload);
-
-                File outFile = local.storeFileBegin(localName);
-                remote.loadFile(fi.localFile.getName(), fi.remoteFilename, outFile);
-                local.storeFileEnd(localName);
-            } else {
-                showOperation(R.string.opRead);
-                // just load from sdcard for calc sha1
-                // translatedResources = local.loadFile(localName);
-            }
-            fi.localStatusOrigin = fi.translatedID == null;
-            fi.translatedID = local.getVersion(localName);
-        }
-
+        setProgressTotal(files.size());
         showOperation(R.string.opInstall);
         showFile("");
         local.remountSystem(true);
-        for (FileInfo fi : ui.filesForProcess) {
+        // translate
+        for (File f : files) {
             if (stopped) {
-                break;
-            }
-            if (fi.remoteStatus != FileInfo.STATUS.UPDATE) {
-                continue;
+                return;
             }
             incProgress();
 
-            showFile(fi.localFile.getName());
+            showFile(f.getName());
             showOperation(R.string.opInstallTranslation);
-            if (fi.localStatusOrigin) {
-                local.backupApk(fi.localFile);
+            local.backupApk(f);
+
+            translateApk(f);
+            if (stopped) {
+                return;
             }
 
-            String localName = fi.remoteFilename.replace(".arsc.gz", ".arsc");
-            byte[] translated = local.loadFile(localName);
-
-            local.patchFile(fi.localFile, fi, translated);
-            final File ff = fi.localFile;
+            final File ff = f;
             ui.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    textLog.setText(textLog.getText() + ff.getName() + " installed\n");
+                    textLog.setText(textLog.getText() + ff.getName() + " translated\n");
                 }
             });
         }
@@ -132,5 +123,62 @@ public class Step4 extends Step {
                 new StepFinish(ui, ui.getResources().getText(R.string.textFinished)).doit();
             }
         });
+    }
+
+    boolean needTranslate(File f) throws Exception {
+        FileInfo fi = new FileInfo(f);
+        local.getManifestInfo(fi);
+
+        ZipFile zip = new ZipFile(f);
+        ZipEntry en = zip.getEntry("resources.arsc");
+        zip.close();
+
+        if (en == null) {
+            return false;
+        }
+
+        return ui.translation.isPackageTranslated(fi.packageName);
+    }
+
+    void translateApk(File f) throws Exception {
+        if (stopped) {
+            return;
+        }
+
+        ResourceProcessor rs;
+
+        ZipFile zip = new ZipFile(f);
+        try {
+            ZipEntry en = zip.getEntry("resources.arsc");
+
+            if (stopped) {
+                return;
+            }
+            InputStream in = zip.getInputStream(en);
+            try {
+                ChunkReader2 rsReader = new ChunkReader2(in);
+                rs = new ResourceProcessor(rsReader);
+            } finally {
+                in.close();
+            }
+        } finally {
+            zip.close();
+        }
+
+        if (stopped) {
+            return;
+        }
+        rs.process("Settings", ui.translation);
+
+        if (stopped) {
+            return;
+        }
+
+        byte[] translatedResources = rs.save();
+
+        if (stopped) {
+            return;
+        }
+        local.patchFile(f, translatedResources);
     }
 }
