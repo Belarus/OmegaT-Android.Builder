@@ -69,15 +69,19 @@ public class PackTranslation {
 
         project.iterateByDefaultTranslations(new IProject.DefaultTranslationsIterator() {
             public void iterate(String source, TMXEntry trans) {
-                countDefault++;
-                defaults.put(source, trans.translation);
+                if (!source.equals(trans.translation)) {
+                    countDefault++;
+                    defaults.put(source, trans.translation);
+                }
             }
         });
 
         project.iterateByMultipleTranslations(new IProject.MultipleTranslationsIterator() {
             public void iterate(EntryKey source, TMXEntry trans) {
-                countMultiple++;
-                multiples.put(source, trans.translation);
+                if (!source.sourceText.equals(trans.translation)) {
+                    countMultiple++;
+                    multiples.put(source, trans.translation);
+                }
             }
         });
 
