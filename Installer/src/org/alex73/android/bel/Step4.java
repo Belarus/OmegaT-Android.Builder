@@ -99,7 +99,7 @@ public class Step4 extends Step {
             ui.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    textLog.setText(textLog.getText() + ff.getName() + " translated\n");
+                    textLog.setText(textLog.getText() + ff.getName() + " перакладзены\n");
                 }
             });
         }
