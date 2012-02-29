@@ -101,6 +101,9 @@ public class Translation {
             if (translatedSegments[i] != null) {
                 notExist = false;
                 break;
+            } else {
+                // set non-translated value
+                translatedSegments[i] = segments.get(i);
             }
         }
         if (notExist) {

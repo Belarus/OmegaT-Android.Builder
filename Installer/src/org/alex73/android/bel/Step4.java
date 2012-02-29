@@ -12,6 +12,7 @@ import org.alex73.android.arsc2.Translation;
 import org.alex73.android.arsc2.reader.ChunkReader2;
 
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -145,6 +146,8 @@ public class Step4 extends Step {
             return;
         }
 
+        Log.v("AndroidBel", "Translate " + f);
+        
         ResourceProcessor rs;
 
         ZipFile zip = new ZipFile(f);

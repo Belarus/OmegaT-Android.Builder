@@ -232,6 +232,7 @@ public class LocalStorage {
     public void storeFileEnd(String filename) throws Exception {
         File outFile = new File(DIR_STORE + filename);
         File newFile = new File(DIR_STORE + filename + ".new");
+        newFile.setLastModified(outFile.lastModified());
         outFile.delete();
         newFile.renameTo(outFile);
     }
