@@ -23,6 +23,6 @@
 	<string name="textFinished">Усталявана</string>
     <string name="textDownloadSize">Спампуецца: $0k</string>
     <string name="textUploadSize">Запампуецца: $0k</string>
-    <string name="msgRoot">Каб усталяваць пераклад, вам трэба мець root-доступ. Яго можна атрымаць праз z4root (http://android.mounik.org/z4root.1.3.0.apk)</string>
+    <string name="msgRoot">Каб усталяваць пераклад, вам трэба мець root-доступ. Яго можна атрымаць праз z4root ( http://android.mounik.org/z4root.1.3.0.apk )</string>
     <string name="textLabel3">Пазначце, што ўсталёўваць</string>
 </resources>

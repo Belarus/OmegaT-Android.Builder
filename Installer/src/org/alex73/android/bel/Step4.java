@@ -2,6 +2,7 @@ package org.alex73.android.bel;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -62,15 +63,15 @@ public class Step4 extends Step {
             f.delete();
         }
 
-        List<File> files = local.getLocalFiles();
+        List<FileInfo> files = new ArrayList<FileInfo>();
         // remove non-translated apk from list
-        for (int i = 0; i < files.size(); i++) {
+        for (File f : local.getLocalFiles()) {
             if (stopped) {
                 return;
             }
-            if (!needTranslate(files.get(i))) {
-                files.remove(i);
-                i--;
+            FileInfo fi = new FileInfo(f);
+            if (needTranslate(fi)) {
+                files.add(fi);
             }
         }
 
@@ -79,26 +80,26 @@ public class Step4 extends Step {
         showFile("");
         local.remountSystem(true);
         // translate
-        for (File f : files) {
+        for (FileInfo fi : files) {
             if (stopped) {
                 return;
             }
             incProgress();
 
-            showFile(f.getName());
+            showFile(fi.localFile.getName());
             showOperation(R.string.opInstallTranslation);
-            local.backupApk(f);
+            local.backupApk(fi.localFile);
 
-            translateApk(f);
+            translateApk(fi);
             if (stopped) {
                 return;
             }
 
-            final File ff = f;
+            final File ff = fi.localFile;
             ui.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    textLog.setText(textLog.getText() + ff.getName() + " translated\n");
+                    textLog.setText(textLog.getText() + ff.getName() + " перакладзены\n");
                 }
             });
         }
@@ -126,11 +127,10 @@ public class Step4 extends Step {
         });
     }
 
-    boolean needTranslate(File f) throws Exception {
-        FileInfo fi = new FileInfo(f);
+    boolean needTranslate(FileInfo fi) throws Exception {
         local.getManifestInfo(fi);
 
-        ZipFile zip = new ZipFile(f);
+        ZipFile zip = new ZipFile(fi.localFile);
         ZipEntry en = zip.getEntry("resources.arsc");
         zip.close();
 
@@ -141,16 +141,16 @@ public class Step4 extends Step {
         return ui.translation.isPackageTranslated(fi.packageName);
     }
 
-    void translateApk(File f) throws Exception {
+    void translateApk(FileInfo fi) throws Exception {
         if (stopped) {
             return;
         }
 
-        Log.v("AndroidBel", "Translate " + f);
-        
+        Log.v("AndroidBel", "Translate " + fi.localFile);
+
         ResourceProcessor rs;
 
-        ZipFile zip = new ZipFile(f);
+        ZipFile zip = new ZipFile(fi.localFile);
         try {
             ZipEntry en = zip.getEntry("resources.arsc");
 
@@ -171,7 +171,7 @@ public class Step4 extends Step {
         if (stopped) {
             return;
         }
-        rs.process("Settings", ui.translation);
+        rs.process(fi.packageName, ui.translation);
 
         if (stopped) {
             return;
@@ -182,6 +182,6 @@ public class Step4 extends Step {
         if (stopped) {
             return;
         }
-        local.patchFile(f, translatedResources);
+        local.patchFile(fi.localFile, translatedResources);
     }
 }

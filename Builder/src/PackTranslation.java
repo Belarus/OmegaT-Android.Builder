@@ -39,6 +39,7 @@ public class PackTranslation {
     static Map<String, String> defaults = new HashMap<String, String>(20000);
     static Map<EntryKey, String> multiples = new HashMap<EntryKey, String>(1000);
     static DataOutputStream out;
+    static Map<String, String> dirToPackages = new HashMap<String, String>();
 
     static StringBuilder outstr = new StringBuilder(1000000);
     static Map<String, Integer> outstrpos = new HashMap<String, Integer>();
@@ -65,6 +66,7 @@ public class PackTranslation {
         Set<String> packages = new HashSet<String>();
         for (App app : translationInfo.getApp()) {
             packages.add(app.getPackageName());
+            dirToPackages.put(app.getDirName() + '/', app.getPackageName());
         }
 
         project.iterateByDefaultTranslations(new IProject.DefaultTranslationsIterator() {
@@ -79,8 +81,11 @@ public class PackTranslation {
         project.iterateByMultipleTranslations(new IProject.MultipleTranslationsIterator() {
             public void iterate(EntryKey source, TMXEntry trans) {
                 if (!source.sourceText.equals(trans.translation)) {
-                    countMultiple++;
-                    multiples.put(source, trans.translation);
+                    String packageName = dirToPackages.get(source.file);
+                    if (packageName != null) {// TODO: say to translator
+                        countMultiple++;
+                        multiples.put(source, trans.translation);
+                    }
                 }
             }
         });
@@ -109,8 +114,9 @@ public class PackTranslation {
             collectString(en.getValue());
         }
         for (Map.Entry<EntryKey, String> en : multiples.entrySet()) {
+            String packageName = dirToPackages.get(en.getKey().file);
             collectString(en.getKey().sourceText);
-            collectString(en.getKey().file);
+            collectString(packageName);
             collectString(en.getKey().id);
             collectString(en.getValue());
         }
@@ -137,7 +143,8 @@ public class PackTranslation {
         }
         out.writeInt(multiples.size());
         for (Map.Entry<EntryKey, String> en : multiples.entrySet()) {
-            writeString(en.getKey().file);
+            String packageName = dirToPackages.get(en.getKey().file);
+            writeString(packageName);
             writeString(en.getKey().id);
             writeString(en.getKey().sourceText);
             writeString(en.getValue());
