@@ -50,8 +50,7 @@ public class PackCyanogenResources {
         for (App app : translationInfo.getApp()) {
             File translatedDir = new File(projectPath + "/target/" + app.getDirName());
             for (Cyanogen cy : app.getCyanogen()) {
-                String version = "cyanogen-"
-                        + UnpackCyanogenResources.getCyanogenDirVersion(args[0], cy.getSrc());
+                String version = "cyanogen-"+args[1];
                 if (cy.getOutSuffix() != null) {
                     version = cy.getOutSuffix() + '-' + version;
                 }
