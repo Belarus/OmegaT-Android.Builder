@@ -26,12 +26,12 @@ public class UnpackCyanogenResources {
 		for (App app : translationInfo.getApp()) {
 			File outDir = new File(projectPath + "/source/" + app.getDirName());
 			for (Cyanogen cy : app.getCyanogen()) {
-				String version = "cyanogen-" + args[1];
+				String version = args[1];
 				if (cy.getOutSuffix() != null) {
 					version = cy.getOutSuffix() + '-' + version;
 				}
 
-				System.out.println("From cyanogen " + cy.getSrc() + " version="
+				System.out.println("From dir " + cy.getSrc() + " version="
 						+ version + " into " + outDir.getAbsolutePath());
 
 				outDir.mkdirs();

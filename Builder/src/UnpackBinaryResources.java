@@ -60,7 +60,7 @@ public class UnpackBinaryResources {
                     String dirName = getDirName(mi.getPackageName(), mi.getVersion());
                     if (dirName != null) {
                         byte[] arsc = BuildAll.extractFile(apk, "resources.arsc");
-                        processARSC(arsc, dirName, createSuffix(mi, Utils.sha1(arsc)));
+                        processARSC(arsc, dirName, createSuffix(mi));
                     }
                 }
                 System.gc();
@@ -113,15 +113,8 @@ public class UnpackBinaryResources {
 
     static final String ALLOWED_VER = "0123456789.";
 
-    static String createSuffix(ManifestInfo mi, String origArscSha1) {
-        int p = 0;
-        for (; p < mi.getVersion().length(); p++) {
-            if (ALLOWED_VER.indexOf(mi.getVersion().charAt(p)) < 0) {
-                break;
-            }
-        }
-        String v = mi.getVersion().substring(0, p);
-        return v + '-' + origArscSha1;
+    static String createSuffix(ManifestInfo mi) {
+        return mi.getVersion();
     }
 
     static void readTranslationInfo() throws Exception {
