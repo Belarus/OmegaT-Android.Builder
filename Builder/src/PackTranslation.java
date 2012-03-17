@@ -26,6 +26,7 @@ import org.omegat.core.segmentation.Segmenter;
 import org.omegat.filters2.master.PluginUtils;
 import org.omegat.util.Language;
 import org.omegat.util.PatternConsts;
+import org.omegat.util.ProjectFileStorage;
 import org.omegat.util.RuntimePreferences;
 
 import android.control.App;
@@ -52,7 +53,7 @@ public class PackTranslation {
         Core.initializeConsole(params);
         PluginUtils.loadPlugins(params);
 
-        ProjectProperties props = new ProjectProperties(new File("../../Android.OmegaT/Android/"));
+        ProjectProperties props = ProjectFileStorage.loadProjectProperties(new File("../../Android.OmegaT/Android/"));
         RealProject project = new RealProject(props);
         project.loadProject();
 
