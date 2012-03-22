@@ -21,6 +21,10 @@ public class ResourceProcessor {
     "attr", "id", "style", "dimen", "color", "drawable", "layout", "menu", "anim", "xml", "raw", "bool",
             "integer", "fraction", "mipmap", "animator", "interpolator"));
 
+    public static final int BAG_KEY_PLURALS_START = 0x01000004;
+    public static final int BAG_KEY_PLURALS_END = 0x01000009;
+    private static final String[] QUANTITY_MAP = new String[] { "other", "zero", "one", "two", "few", "many" };
+
     protected static final Set<String> KNOWN_TYPES_TRANSLATED = new HashSet<String>(Arrays.asList("string",
             "array", "plurals"));
 
@@ -65,12 +69,12 @@ public class ResourceProcessor {
         Assert.assertNull("Chunk after packages", rd.readChunk());
     }
 
-    public void process(String fileName, Translation translation) {
+    public void process(String packageName, Translation translation) {
         markUsedStrings();
         removeUnusedStrings();
         remapAllConfigs();
         removeUnusedConfigs();
-        translate(fileName, translation);
+        translate(packageName, translation);
     }
 
     public byte[] save() {
@@ -194,7 +198,7 @@ public class ResourceProcessor {
         }
     }
 
-    private void translate(String fileName, Translation translation) {
+    private void translate(String packageName, Translation translation) {
         for (Package2 pkg : packages) {
             for (Type2 t : pkg.getAllTypes()) {
                 Assert.assertTrue("Unknown type: " + t.getName(), KNOWN_TYPES.contains(t.getName()));
@@ -227,8 +231,13 @@ public class ResourceProcessor {
                         for (Entry2.KeyValue kv : ee.getKeyValues()) {
                             int si = kv.getComplexStringIndex();
                             if (si >= 0) {
+                                String name = ee.getName();
+                                // may be plural ?
+                                if (kv.key >= BAG_KEY_PLURALS_START && kv.key <= BAG_KEY_PLURALS_END) {
+                                    name += '/' + QUANTITY_MAP[kv.key - BAG_KEY_PLURALS_START];
+                                }
                                 // translate
-                                int newsi = translateString(translation, fileName, ee.getName(), si);
+                                int newsi = translateString(translation, packageName, name, si);
                                 kv.setComplexStringIndex(newsi);
                             }
                         }
@@ -236,7 +245,7 @@ public class ResourceProcessor {
                         int si = ee.getSimpleStringIndex();
                         if (si >= 0) {
                             // translate
-                            int newsi = translateString(translation, fileName, ee.getName(), si);
+                            int newsi = translateString(translation, packageName, ee.getName(), si);
                             ee.setSimpleStringIndex(newsi);
                         }
                     }
@@ -245,20 +254,29 @@ public class ResourceProcessor {
         }
     }
 
-    private int translateString(Translation tr, String fileName, String entryName, int origStringIndex) {
+    private int translateString(Translation tr, String packageName, String entryName, int origStringIndex) {
         // translate
         StringTable2.StringInstance source = globalStringTable.getStrings().get(origStringIndex);
-        String origString = source.getRawString();
+
+        StyledString orig = new StyledString();
+        orig.raw = source.getRawString();
         StringTable2.StringInstance.Tag[] tags = source.getTags();
         if (tags != null) {
-            // TODO tags not supported yet
-            return origStringIndex;
+            orig.tags = new StyledString.Tag[tags.length];
+            for (int i = 0; i < orig.tags.length; i++) {
+                orig.tags[i] = new StyledString.Tag();
+                orig.tags[i].start = tags[i].start();
+                orig.tags[i].end = tags[i].end();
+                orig.tags[i].tagName = tags[i].tagName();
+            }
+            orig.sortTags();
+        } else {
+            orig.tags = StyledString.NO_TAGS;
         }
-        String trans = tr.getTranslation(fileName, entryName, origString);
+
+        StyledString trans = tr.getTranslation(packageName, entryName, orig);
         if (trans != null) {
-            StyledString str = new StyledString();
-            str.raw = trans;
-            return globalStringTable.addString(str);
+            return globalStringTable.addString(trans);
         } else {
             return origStringIndex;
         }

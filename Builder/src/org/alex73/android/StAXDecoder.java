@@ -26,13 +26,7 @@ import org.alex73.android.arsc.Config;
 import org.alex73.android.arsc.Entry;
 import org.alex73.android.arsc.Resources;
 
-public class StAXDecoder implements IDecoder {
-
-    private XMLInputFactory factory;
-
-    public StAXDecoder() {
-        factory = XMLInputFactory.newFactory();
-    }
+public class StAXDecoder extends StAXDecoderReader implements IDecoder {
 
     public void reads(Resources rs, File inDir, String versionSuffix) throws Exception {
         for (org.alex73.android.arsc.Package pkg : rs.getPackages()) {
@@ -57,25 +51,7 @@ public class StAXDecoder implements IDecoder {
             return;
         }
 
-        Map<String, StyledString> strings = new HashMap<String, StyledString>();
-
-        XMLEventReader rd = factory
-                .createXMLEventReader(new BufferedInputStream(new FileInputStream(inFile)));
-
-        while (rd.hasNext()) {
-            XMLEvent e = rd.nextEvent();
-            switch (e.getEventType()) {
-            case XMLEvent.START_ELEMENT:
-                StartElement eStart = (StartElement) e;
-                if ("string".equals(eStart.getName().getLocalPart())) {
-                    String name = eStart.getAttributeByName(new QName("name")).getValue();
-                    StyledString str = read(rd);
-                    Assert.assertNull("", strings.put(name, str));
-                }
-                break;
-            }
-        }
-        rd.close();
+        Map<String, StyledString> strings = readStrings(inFile);
 
         Config cBel = duplicateBaseConfig(pkg, "string");
 
@@ -96,29 +72,7 @@ public class StAXDecoder implements IDecoder {
             return;
         }
 
-        Map<String, List<StyledString>> arrays = new HashMap<String, List<StyledString>>();
-
-        XMLEventReader rd = factory
-                .createXMLEventReader(new BufferedInputStream(new FileInputStream(inFile)));
-
-        List<StyledString> array = null;
-        while (rd.hasNext()) {
-            XMLEvent e = rd.nextEvent();
-            switch (e.getEventType()) {
-            case XMLEvent.START_ELEMENT:
-                StartElement eStart = (StartElement) e;
-                if ("string-array".equals(eStart.getName().getLocalPart())) {
-                    String name = eStart.getAttributeByName(new QName("name")).getValue();
-                    array = new ArrayList<StyledString>();
-                    Assert.assertNull("", arrays.put(name, array));
-                } else if ("item".equals(eStart.getName().getLocalPart())) {
-                    StyledString str = read(rd);
-                    array.add(str);
-                }
-                break;
-            }
-        }
-        rd.close();
+        Map<String, List<StyledString>> arrays = readArrays(inFile);
 
         Config cBel = duplicateBaseConfig(pkg, "array");
         for (Entry e : cBel.getEntries()) {
@@ -142,30 +96,7 @@ public class StAXDecoder implements IDecoder {
             return;
         }
 
-        Map<String, Map<String, StyledString>> plurals = new HashMap<String, Map<String, StyledString>>();
-
-        XMLEventReader rd = factory
-                .createXMLEventReader(new BufferedInputStream(new FileInputStream(inFile)));
-
-        Map<String, StyledString> plural = null;
-        while (rd.hasNext()) {
-            XMLEvent e = rd.nextEvent();
-            switch (e.getEventType()) {
-            case XMLEvent.START_ELEMENT:
-                StartElement eStart = (StartElement) e;
-                if ("plurals".equals(eStart.getName().getLocalPart())) {
-                    String name = eStart.getAttributeByName(new QName("name")).getValue();
-                    plural = new TreeMap<String, StyledString>();
-                    Assert.assertNull("", plurals.put(name, plural));
-                } else if ("item".equals(eStart.getName().getLocalPart())) {
-                    String quantity = eStart.getAttributeByName(new QName("quantity")).getValue();
-                    StyledString str = read(rd);
-                    plural.put(quantity, str);
-                }
-                break;
-            }
-        }
-        rd.close();
+        Map<String, Map<String, StyledString>> plurals = readPlurals(inFile);
 
         Config cBel = duplicateBaseConfig(pkg, "plurals");
         for (Entry e : cBel.getEntries()) {
@@ -218,84 +149,5 @@ public class StAXDecoder implements IDecoder {
         Assert.assertEquals("", XMLEvent.START_ELEMENT, e.getEventType());
 
         return read(rd);
-    }
-
-    protected StyledString read(XMLEventReader rd) throws Exception {
-        List<StyledString.Tag> tags = new ArrayList<StyledString.Tag>();
-        Stack<StyledString.Tag> tagsStack = new Stack<StyledString.Tag>();
-        StringBuilder s = new StringBuilder();
-
-        while (true) {
-            XMLEvent e = rd.nextEvent();
-
-            switch (e.getEventType()) {
-            case XMLEvent.START_ELEMENT:
-                StartElement eStart = (StartElement) e;
-                StyledString.Tag tagStart = new StyledString.Tag();
-                tagStart.start = s.length();
-                tagStart.tagName = eStart.getName().getLocalPart();
-                for (Iterator<Attribute> it = eStart.getAttributes(); it.hasNext();) {
-                    Attribute a = it.next();
-                    tagStart.tagName += ";" + a.getName() + "=" + a.getValue();
-                }
-                tags.add(tagStart);
-                tagsStack.push(tagStart);
-                break;
-            case XMLEvent.END_ELEMENT:
-                EndElement eEnd = (EndElement) e;
-                if (tagsStack.isEmpty()) {
-                    StyledString result = new StyledString();
-                    result.raw = s.toString();
-                    result.tags = tags.toArray(new StyledString.Tag[tags.size()]);
-                    return result;
-                }
-                StyledString.Tag tagEnd = tagsStack.pop();
-                tagEnd.end = s.length() - 1;
-                break;
-            case XMLEvent.CHARACTERS:
-                Characters eChar = (Characters) e;
-                s.append(readText(eChar.getData()));
-                break;
-            case XMLEvent.SPACE:
-                Characters eSpace = (Characters) e;
-                s.append(eSpace.getData());
-                break;
-            }
-        }
-    }
-
-    StringBuilder readTextBuffer = new StringBuilder();
-
-    protected String readText(String text) {
-        readTextBuffer.setLength(0);
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            char cNext;
-            try {
-                cNext = text.charAt(i + 1);
-            } catch (StringIndexOutOfBoundsException ex) {
-                cNext = 0;
-            }
-            if (c == '\\') {
-                switch (cNext) {
-                case 'r':
-                    readTextBuffer.append('\r');
-                    break;
-                case 'n':
-                    readTextBuffer.append('\n');
-                    break;
-                case 't':
-                    readTextBuffer.append('\t');
-                    break;
-                default:
-                    readTextBuffer.append(cNext);
-                    break;
-                }
-                i++;
-            } else {
-                readTextBuffer.append(c);
-            }
-        }
-        return readTextBuffer.toString();
     }
 }

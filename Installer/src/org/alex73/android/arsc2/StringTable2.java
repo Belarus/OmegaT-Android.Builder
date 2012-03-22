@@ -82,9 +82,13 @@ public class StringTable2 {
                 return tags[offset + 2];
             }
 
+            public String tagName() {
+                return strings.get(tagIndex()).getRawString();
+            }
+
             private final int offset;
 
-            public Tag(int offset) {
+            Tag(int offset) {
                 this.offset = offset;
             }
         }

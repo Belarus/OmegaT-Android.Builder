@@ -5,31 +5,16 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
+
+import org.alex73.android.StyledIdString;
+import org.alex73.android.StyledString;
 
 public class Translation {
     String text;
 
     public Map<String, String> defaults;
-    public Map<MultipleKey, String> multiples;
-    public Set<String> packages;
-
-    public static class MultipleKey {
-        public String source, file, id;
-
-        public int hashCode() {
-            return source.hashCode() + file.hashCode() + id.hashCode();
-        }
-
-        public boolean equals(Object obj) {
-            MultipleKey k2 = (MultipleKey) obj;
-            return source.equals(k2.source) && file.equals(k2.file) && id.equals(k2.id);
-        }
-    }
+    public Map<String, Map<StyledIdString, StyledString>> exact = new HashMap<String, Map<StyledIdString, StyledString>>();
 
     public Translation(InputStream in) throws IOException {
         DataInputStream data = new DataInputStream(new BufferedInputStream(in, 16384));
@@ -44,35 +29,22 @@ public class Translation {
             defaults.put(source, translation);
         }
 
-        int multiplesCount = data.readInt();
-        multiples = new HashMap<MultipleKey, String>(multiplesCount);
-        for (int i = 0; i < multiplesCount; i++) {
-            MultipleKey key = new MultipleKey();
-            key.file = readString(data);
-            key.id = readString(data);
-            key.source = readString(data);
-            String translation = readString(data);
-            multiples.put(key, translation);
-        }
-
-        int segmentationRulesCount = data.readInt();
-        Segmenter.rules = new Segmenter.SegmentationRule[segmentationRulesCount];
-        for (int i = 0; i < Segmenter.rules.length; i++) {
-            Segmenter.rules[i] = new Segmenter.SegmentationRule();
-            Segmenter.rules[i].breakRule = data.readBoolean();
-            Segmenter.rules[i].beforeBreak = Pattern.compile(readString(data));
-            Segmenter.rules[i].afterBreak = Pattern.compile(readString(data));
-        }
-
         int packagesCount = data.readInt();
-        packages = new HashSet<String>();
         for (int i = 0; i < packagesCount; i++) {
-            packages.add(readString(data));
+            String pkg = readString(data);
+            int count = data.readInt();
+            Map<StyledIdString, StyledString> map = new HashMap<StyledIdString, StyledString>(count);
+            for (int j = 0; j < count; j++) {
+                StyledIdString key = readStyledIdString(data);
+                StyledString value = readStyledString(data);
+                map.put(key, value);
+            }
+            exact.put(pkg, map);
         }
     }
 
     public boolean isPackageTranslated(String packageName) {
-        return packages.contains(packageName);
+        return exact.containsKey(packageName);
     }
 
     private void readText(DataInputStream data) throws IOException {
@@ -85,42 +57,73 @@ public class Translation {
 
     private String readString(DataInputStream data) throws IOException {
         int pos = data.readInt();
-        int len = data.readInt();
+        int len = data.readShort();
         return text.substring(pos, pos + len);
     }
 
-    public String getTranslation(String file, String id, String source) {
-        List<String> segments = Segmenter.segment(source);
-        String[] translatedSegments = new String[segments.size()];
-        for (int i = 0; i < segments.size(); i++) {
-            translatedSegments[i] = getSegmentTranslation(file, id, segments.get(i));
+    private StyledString readStyledString(DataInputStream data) throws IOException {
+        StyledString str = new StyledString();
+        str.raw = readString(data);
+        str.tags = new StyledString.Tag[data.readShort()];
+        for (int i = 0; i < str.tags.length; i++) {
+            str.tags[i] = new StyledString.Tag();
+            str.tags[i].tagName = readString(data);
+            str.tags[i].start = data.readShort();
+            str.tags[i].end = data.readShort();
         }
-        // check if all translations not exist
-        boolean notExist = true;
-        for (int i = 0; i < translatedSegments.length; i++) {
-            if (translatedSegments[i] != null) {
-                notExist = false;
-                break;
-            } else {
-                // set non-translated value
-                translatedSegments[i] = segments.get(i);
-            }
-        }
-        if (notExist) {
-            return null;
-        }
-        return Segmenter.glue(translatedSegments);
+        str.sortTags();
+        return str;
     }
 
-    private String getSegmentTranslation(String file, String id, String segment) {
-        MultipleKey key = new MultipleKey();
-        key.source = segment;
-        key.file = file;
-        key.id = id;
-        String translation = multiples.get(key);
-        if (translation == null) {
-            translation = defaults.get(segment);
+    private StyledIdString readStyledIdString(DataInputStream data) throws IOException {
+        StyledIdString str = new StyledIdString();
+        str.id = readString(data);
+        str.raw = readString(data);
+        str.tags = new StyledString.Tag[data.readShort()];
+        for (int i = 0; i < str.tags.length; i++) {
+            str.tags[i] = new StyledString.Tag();
+            str.tags[i].tagName = readString(data);
+            str.tags[i].start = data.readShort();
+            str.tags[i].end = data.readShort();
         }
-        return translation;
+        str.sortTags();
+        return str;
+    }
+
+    public StyledString getTranslation(String packageName, String id, StyledString source) {
+        Map<StyledIdString, StyledString> tr = exact.get(packageName);
+        if (tr != null) {
+            StyledIdString si = new StyledIdString();
+            si.id = id;
+            si.raw = source.raw;
+            si.tags = source.tags;
+            StyledString trans = tr.get(si);
+            if (trans != null) {
+                return trans;
+            }
+           //TODO
+            while (si.raw.length() > 0 && si.raw.charAt(si.raw.length() - 1) <= ' ') {
+                si.raw = si.raw.substring(0, si.raw.length() - 1);
+                trans = tr.get(si);
+                if (trans != null) {
+                    return trans;
+                }
+            }
+            notFoundInExact(packageName, id, source);
+        }
+
+        if (!source.hasTags()) {
+            String defaultTranslation = defaults.get(source.raw);
+            if (defaultTranslation != null) {
+                StyledString str = new StyledString();
+                str.raw = defaultTranslation;
+                return str;
+            }
+        }
+
+        return null;
+    }
+
+    public void notFoundInExact(String packageName, String id, StyledString source) {
     }
 }

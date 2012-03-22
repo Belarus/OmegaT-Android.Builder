@@ -9,6 +9,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.alex73.android.Assert;
+import org.alex73.android.StAXDecoderReader;
+import org.alex73.android.StyledString;
 import org.alex73.android.arsc2.ResourceProcessor;
 import org.alex73.android.arsc2.Segmenter;
 import org.alex73.android.arsc2.StringTable2;
@@ -21,15 +23,37 @@ import org.apache.commons.io.IOUtils;
 public class Tests {
 
     public static void main(String[] args) throws Exception {
-       // testVar();
+        // testVar();
+        testStAXDecoderReader();
+
         StringTable2.OPTIMIZE = true;
         testTranslations();
         testRecreate();
 
         String orig = "Test 1 asdjghjkasdhgjk hasd gjk.  Ajhkjashdjkgh jkhjkhjk.\n\n\nZzzzzz.";
         List<String> s = Segmenter.segment(orig);
-        String dest = Segmenter.glue(s);
+        String dest = Segmenter.glue(s.toArray(new String[s.size()]));
         Assert.assertTrue("", orig.equals(dest));
+    }
+
+    public static void testStAXDecoderReader() {
+        testStAXDecoderReader(" a", "a");
+        testStAXDecoderReader(" a ", "a");
+        testStAXDecoderReader("a ", "a");
+        testStAXDecoderReader("\"zzz", "zzz");
+        testStAXDecoderReader("List \"OK\"", "List OK");
+        testStAXDecoderReader("List \\\"OK\\\"", "List \"OK\"");
+        testStAXDecoderReader("a\\u0020", "a ");
+        testStAXDecoderReader("a\\n", "a\n");
+        testStAXDecoderReader("a\\n\\n", "a\n\n");
+    }
+
+    private static void testStAXDecoderReader(String src, String result) {
+        StyledString str = new StyledString();
+        str.tags = new StyledString.Tag[0];
+        str.raw = src;
+        str = StAXDecoderReader.postProcessString(str);
+        Assert.assertTrue("Result: '" + str.raw + "', Expected: '" + result + "'", result.equals(str.raw));
     }
 
     public static void testTranslations() throws Exception {
@@ -106,7 +130,7 @@ public class Tests {
         ResourceProcessor rs = new ResourceProcessor(rsReader);
         return rs.globalStringTable.write();
     }
-    
+
     public static void testVar() {
         for (int i = 0; i < 32768; i++) {
             byte[] c = StringTable2.constructVarint(i);
