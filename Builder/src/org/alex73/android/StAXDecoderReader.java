@@ -15,7 +15,6 @@ import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.events.Attribute;
-import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
@@ -81,14 +80,19 @@ public class StAXDecoderReader {
                 case "item":
                     Attribute quantity = eStart.getAttributeByName(new QName("quantity"));
                     str = read(rd);
-                    if (quantity != null) {
+                    if (plural != null && quantity != null) {
                         Assert.assertNull("", plural.put(quantity.getValue(), str));
-                    } else {
+                    } else if (array != null) {
                         array.add(str);
                     }
                     break;
                 case "resources":
                 case "skip":
+                case "integer-array":
+                case "array":
+                case "color":
+                case "add-resource":
+                case "eat-comment":
                     break;
                 default:
                     Assert.fail("Wrong element: " + e);
@@ -132,15 +136,22 @@ public class StAXDecoderReader {
                 tagEnd.end = currentString.length() - 1;
                 break;
             case XMLEvent.CHARACTERS:
-                Characters eChar = (Characters) e;
-                currentString.append(eChar.getData());
+                String text = postProcessPartString(e.asCharacters().getData());
+                currentString.append(text);
                 break;
-            case XMLEvent.SPACE:
-                Characters eSpace = (Characters) e;
-                currentString.append(eSpace.getData());
+            case XMLEvent.COMMENT:
+                break;
+            default:
+                Assert.fail("Wrong tag: " + e);
                 break;
             }
         }
+    }
+
+    public static String postProcessPartString(String str) {
+        str = str.replaceAll("^\\s+", " ");
+        str = str.replaceAll("\\s+$", " ");
+        return str;
     }
 
     boolean inQuotes;
@@ -149,37 +160,27 @@ public class StAXDecoderReader {
         str.sortTags();
 
         // trim
-        while (str.raw.length() > 0) {
-            if (str.raw.charAt(0) <= ' ') {
-                decreaseTagsPos(str, 0, 1);
-                str.raw = str.raw.substring(1);
-            } else {
-                break;
-            }
-        }
-        while (str.raw.length() > 0) {
-            if (str.raw.charAt(str.raw.length() - 1) <= ' ') {
-                decreaseTagsPos(str, str.raw.length() - 1, 1);
-                str.raw = str.raw.substring(0, str.raw.length() - 1);
-            } else {
-                break;
-            }
-        }
+        // while (str.raw.length() > 0) {
+        // if (str.raw.charAt(0) <= ' ') {
+        // decreaseTagsPos(str, 0, 1);
+        // str.raw = str.raw.substring(1);
+        // } else {
+        // break;
+        // }
+        // }
+        // while (str.raw.length() > 0) {
+        // if (str.raw.charAt(str.raw.length() - 1) == ' ') {
+        // decreaseTagsPos(str, str.raw.length() - 1, 1);
+        // str.raw = str.raw.substring(0, str.raw.length() - 1);
+        // } else {
+        // break;
+        // }
+        // }
         // link to other string ?
         if (str.raw.startsWith("@")) {
             return null;
         }
-        // remove double spaces
-        for (int i = 0; i < str.raw.length(); i++) {
-            if (str.raw.charAt(i) <= ' ') {
-                str.raw = str.raw.substring(0, i) + ' ' + str.raw.substring(i + 1);
-                if (i == 0 || str.raw.charAt(i - 1) <= ' ') {
-                    decreaseTagsPos(str, i, 1);
-                    str.raw = str.raw.substring(0, i) + str.raw.substring(i + 1);
-                    i--;
-                }
-            }
-        }
+
         // remove quotes
         boolean inQuotes = false;
         for (int i = 0; i < str.raw.length(); i++) {
@@ -193,32 +194,40 @@ public class StAXDecoderReader {
             switch (c) {
             case '"':
                 inQuotes = !inQuotes;
-                decreaseTagsPos(str, i, 1);
+                str.decreaseTagsPos(i, 1);
                 str.raw = str.raw.substring(0, i) + str.raw.substring(i + 1);
                 break;
             case '\\':
                 switch (cNext) {
                 case '"':
                 case '\'':
+                case '\\':
+                case ' ':
+                case '@':
+                case '?':
                 case '’':
-                    decreaseTagsPos(str, i, 1);
+                    str.decreaseTagsPos(i, 1);
                     str.raw = str.raw.substring(0, i) + cNext + str.raw.substring(i + 2);
                     break;
                 case 'r':
-                    decreaseTagsPos(str, i, 1);
+                    str.decreaseTagsPos(i, 1);
                     str.raw = str.raw.substring(0, i) + '\r' + str.raw.substring(i + 2);
                     break;
                 case 'n':
-                    decreaseTagsPos(str, i, 1);
+                    str.decreaseTagsPos(i, 1);
+                    str.raw = str.raw.substring(0, i) + '\n' + str.raw.substring(i + 2);
+                    break;
+                case '\n':// hack for ics
+                    str.decreaseTagsPos(i, 1);
                     str.raw = str.raw.substring(0, i) + '\n' + str.raw.substring(i + 2);
                     break;
                 case 't':
-                    decreaseTagsPos(str, i, 1);
+                    str.decreaseTagsPos(i, 1);
                     str.raw = str.raw.substring(0, i) + '\t' + str.raw.substring(i + 2);
                     break;
                 case 'u':
                     String num = str.raw.substring(i + 2, i + 6);
-                    decreaseTagsPos(str, i, 5);
+                    str.decreaseTagsPos(i, 5);
                     str.raw = str.raw.substring(0, i) + ((char) Integer.parseInt(num, 16))
                             + str.raw.substring(i + 6);
                     break;
@@ -229,16 +238,5 @@ public class StAXDecoderReader {
             }
         }
         return str;
-    }
-
-    static void decreaseTagsPos(StyledString str, int pos, int num) {
-        for (StyledString.Tag tag : str.tags) {
-            if (tag.start > pos) {
-                tag.start -= num;
-            }
-            if (tag.end > pos) {
-                tag.end -= num;
-            }
-        }
     }
 }

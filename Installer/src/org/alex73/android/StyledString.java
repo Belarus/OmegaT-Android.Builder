@@ -77,16 +77,50 @@ public class StyledString {
         return eq;
     }
 
+    public void decreaseTagsPos(int pos, int num) {
+        for (StyledString.Tag tag : tags) {
+            if (tag.start >= pos) {
+                tag.start -= num;
+            }
+            if (tag.end >= pos) {
+                tag.end -= num;
+            }
+        }
+    }
+
+    public void removeSpaces() {
+        boolean wasSpace = true;
+        for (int i = 0; i < raw.length(); i++) {
+            if (raw.charAt(i) <= ' ') {
+                if (wasSpace) {
+                    raw = raw.substring(0, i) + raw.substring(i + 1);
+                    decreaseTagsPos(i, 1);
+                    i--;
+                } else {
+                    raw = raw.substring(0, i) + ' ' + raw.substring(i + 1);
+                    wasSpace = true;
+                }
+            } else {
+                wasSpace = false;
+            }
+        }
+        int se = raw.length() - 1;
+        if (se >= 0 && raw.charAt(se) <= ' ') {
+            raw = raw.substring(0, se);
+            decreaseTagsPos(se, 1);
+        }
+    }
+
     @Override
     public String toString() {
         return raw + "/tagsCount=" + tags.length;
     }
 
     public void dump(PrintStream wr) throws IOException {
-        wr.println("text: " + raw );
+        wr.println("text: " + raw);
         wr.println("hash: " + raw.hashCode());
         for (StyledString.Tag tag : tags) {
-            wr.println("  tag: " + tag.tagName + "  " + tag.start + '-' + tag.end );
+            wr.println("  tag: " + tag.tagName + "  " + tag.start + '-' + tag.end);
         }
     }
 

@@ -37,15 +37,35 @@ public class Tests {
     }
 
     public static void testStAXDecoderReader() {
-        testStAXDecoderReader(" a", "a");
-        testStAXDecoderReader(" a ", "a");
-        testStAXDecoderReader("a ", "a");
-        testStAXDecoderReader("\"zzz", "zzz");
-        testStAXDecoderReader("List \"OK\"", "List OK");
-        testStAXDecoderReader("List \\\"OK\\\"", "List \"OK\"");
-        testStAXDecoderReader("a\\u0020", "a ");
-        testStAXDecoderReader("a\\n", "a\n");
-        testStAXDecoderReader("a\\n\\n", "a\n\n");
+//        testStAXDecoderReader(" a", "a");
+//        testStAXDecoderReader(" a ", "a");
+//        testStAXDecoderReader("a ", "a");
+//        testStAXDecoderReader("\"zzz", "zzz");
+//        testStAXDecoderReader("List \"OK\"", "List OK");
+//        testStAXDecoderReader("List \\\"OK\\\"", "List \"OK\"");
+//        testStAXDecoderReader("a\\u0020", "a ");
+//        testStAXDecoderReader("a\\n", "a\n");
+//        testStAXDecoderReader("a\\n\\n", "a\n\n");
+
+        Assert.assertTrue("", StAXDecoderReader.postProcessPartString(" \n   a").equals(" a"));
+        Assert.assertTrue("", StAXDecoderReader.postProcessPartString("z\n   ").equals("z "));
+
+        StyledString s1 = new StyledString();
+        StyledString s2 = new StyledString();
+        s1.raw = " zz   tt ";
+        s1.tags = new StyledString.Tag[1];
+        s1.tags[0] = new StyledString.Tag();
+        s1.tags[0].tagName = "b";
+        s1.tags[0].start = 6;
+        s1.tags[0].end = 6;
+        s2.raw = "zz tt";
+        s2.tags = new StyledString.Tag[1];
+        s2.tags[0] = new StyledString.Tag();
+        s2.tags[0].tagName = "b";
+        s2.tags[0].start = 3;
+        s2.tags[0].end = 3;
+        s1.removeSpaces();
+        Assert.assertTrue("", s1.equals(s2));
     }
 
     private static void testStAXDecoderReader(String src, String result) {

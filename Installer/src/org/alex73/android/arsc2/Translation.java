@@ -93,19 +93,17 @@ public class Translation {
     public StyledString getTranslation(String packageName, String id, StyledString source) {
         Map<StyledIdString, StyledString> tr = exact.get(packageName);
         if (tr != null) {
+            source.removeSpaces();
             StyledIdString si = new StyledIdString();
             si.id = id;
             si.raw = source.raw;
             si.tags = source.tags;
             StyledString trans = tr.get(si);
             if (trans != null) {
-                return trans;
-            }
-           //TODO
-            while (si.raw.length() > 0 && si.raw.charAt(si.raw.length() - 1) <= ' ') {
-                si.raw = si.raw.substring(0, si.raw.length() - 1);
-                trans = tr.get(si);
-                if (trans != null) {
+                if (trans.equals(source)) {
+                    // the same string
+                    return null;
+                } else {
                     return trans;
                 }
             }

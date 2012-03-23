@@ -198,7 +198,14 @@ public class PackTranslation {
         }
         // TODO Assert.assertTrue("Wrong tags", origin.equalsTagNames(translated));
         removeSomeTags(origin);
-        removeSomeTags(translated);
+        origin.removeSpaces();
+        boolean nonTranslated = origin.equals(translated);
+        if (nonTranslated) {
+            translated = origin;
+        } else {
+            removeSomeTags(translated);
+        }
+
         for (StyledString.Tag tag : origin.tags) {
             int p = tag.tagName.indexOf(';');
             String tn = p > 0 ? tag.tagName.substring(0, p) : tag.tagName;
