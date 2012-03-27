@@ -56,7 +56,7 @@ public class Translate {
                 if (o != null) {
                     data = FileUtils.readFileToByteArray(o);
                 }
-            } else if (en.getName().equals("system/build.prop")) {
+            } else if (en.getName().endsWith("/build.prop")) {
                 FileUtils.writeByteArrayToFile(temp, data);
                 processProp(temp);
                 data = FileUtils.readFileToByteArray(temp);
