@@ -1,7 +1,6 @@
 package org.alex73.android.bel;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -18,8 +17,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.alex73.android.arsc.ManifestInfo;
-import org.alex73.android.bel.zip.ApkUpdater;
+import org.alex73.android.common.FileInfo;
+import org.alex73.android.common.zip.ApkUpdater;
 
 public class LocalStorage {
     final static File FRAMEWORK_DIR = new File("/system/framework/");
@@ -33,8 +32,6 @@ public class LocalStorage {
     final static Pattern RE_APKNAME = Pattern.compile("(.+)\\.apk$");
 
     final static String RES_FILE = "resources.arsc";
-
-    final static String MANIFEST_FILE = "AndroidManifest.xml";
 
     final static String PATCHED_INFO = "i18n.bel";
 
@@ -68,7 +65,8 @@ public class LocalStorage {
         File[] files = dir.listFiles(filter);
         if (files != null) {
             for (File f : files) {
-                out.add(f);
+                if (f.getName().equals("Settings.apk"))
+                    out.add(f);
             }
         }
     }
@@ -78,38 +76,6 @@ public class LocalStorage {
             .compile("v2: origApkSha1=([0-9a-f]{40}) transARSCSha1=([0-9a-f]{40})");
 
     byte[] buffer = new byte[1024];
-
-    public void getManifestInfo(FileInfo fi) throws Exception {
-        if (stopped) {
-            return;
-        }
-
-        ZipFile apk = new ZipFile(fi.localFile);
-        try {
-            ZipEntry manifestEntry = apk.getEntry(MANIFEST_FILE);
-            if (manifestEntry == null) {
-                // manifest not found in this apk
-                return;
-            }
-
-            ByteArrayOutputStream buf = new ByteArrayOutputStream(16 * 1024);
-            InputStream in = apk.getInputStream(manifestEntry);
-            try {
-                int c;
-                while ((c = in.read(buffer)) > 0) {
-                    buf.write(buffer, 0, c);
-                }
-            } finally {
-                in.close();
-            }
-
-            ManifestInfo m = new ManifestInfo(buf.toByteArray());
-            fi.packageName = m.getPackageName();
-            fi.versionName = m.getVersion();
-        } finally {
-            apk.close();
-        }
-    }
 
     public void getVersionInfo(FileInfo fi) throws Exception {
         ZipFile apk = new ZipFile(fi.localFile);
@@ -253,7 +219,7 @@ public class LocalStorage {
         // new ApkUpdater().append(f, version.store().getBytes(UTF8), translatedResources);
         File fo = new File(f.getAbsolutePath() + ".new");
         createReadableFile(fo);
-        new ApkUpdater().replace(f, fo, version.store().getBytes(UTF8), translatedResources);
+     //   new ApkUpdater().replace(f, fo, version.store().getBytes(UTF8), translatedResources);
 
         fo.setLastModified(f.lastModified());
         if (!f.delete()) {
@@ -267,7 +233,7 @@ public class LocalStorage {
     public void patchFile(File f, byte[] translatedResources) throws Exception {
         File fo = new File(f.getAbsolutePath() + ".new");
         createReadableFile(fo);
-        new ApkUpdater().replace(f, fo, new byte[0], translatedResources);
+        new ApkUpdater().replace(f, fo,translatedResources);
 
         fo.setLastModified(f.lastModified());
         if (!f.delete()) {

@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.alex73.android.arsc2.Translation;
+import org.alex73.android.common.FileInfo;
 
 import android.app.Activity;
 import android.content.res.Configuration;

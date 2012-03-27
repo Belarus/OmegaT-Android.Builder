@@ -81,7 +81,6 @@ public class Tests {
         Translation tr = new Translation(intr);
         intr.close();
         Assert.assertTrue("", tr.defaults.size() > 1000);
-        Assert.assertTrue("", tr.multiples.size() > 100);
     }
 
     public static void testRecreate() throws Exception {

@@ -3,6 +3,8 @@ package org.alex73.android.bel;
 import java.io.File;
 import java.util.List;
 
+import org.alex73.android.common.FileInfo;
+
 import android.text.method.ScrollingMovementMethod;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -43,7 +45,7 @@ public class Step2 extends Step {
             showFile(f.getName());
 
             FileInfo ver = new FileInfo(f);
-            local.getManifestInfo(ver);
+            ver.readManifestInfo();
             if (!ui.translatedPackages.contains(ver.packageName)) {
                 continue;
             }

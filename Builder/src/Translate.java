@@ -10,8 +10,8 @@ import org.alex73.android.StyledString;
 import org.alex73.android.arsc2.ResourceProcessor;
 import org.alex73.android.arsc2.Translation;
 import org.alex73.android.arsc2.reader.ChunkReader2;
-import org.alex73.android.bel.FileInfo;
-import org.alex73.android.bel.LocalStorage;
+import org.alex73.android.common.FileInfo;
+import org.alex73.android.common.zip.ApkUpdater;
 
 public class Translate {
     static TranslationDebug tr;
@@ -27,7 +27,7 @@ public class Translate {
     static void process(File f) throws Exception {
         ResourceProcessor rs;
         FileInfo fi = new FileInfo(f);
-        new LocalStorage().getManifestInfo(fi);
+        fi.readManifestInfo();
         ZipFile zip = new ZipFile(fi.localFile);
         try {
             ZipEntry en = zip.getEntry("resources.arsc");
@@ -48,7 +48,9 @@ public class Translate {
 
         byte[] translatedResources = rs.save();
 
-        // new LocalStorage().patchFile(fi.localFile, translatedResources);
+        File fo = new File(fi.localFile.getParent() + "/out/", fi.localFile.getName());
+        fo.getParentFile().mkdirs();
+        new ApkUpdater().replace(fi.localFile, fo, translatedResources);
     }
 
     static class TranslationDebug extends Translation {

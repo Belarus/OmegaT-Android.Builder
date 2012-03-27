@@ -11,6 +11,7 @@ import java.util.zip.ZipFile;
 import org.alex73.android.arsc2.ResourceProcessor;
 import org.alex73.android.arsc2.Translation;
 import org.alex73.android.arsc2.reader.ChunkReader2;
+import org.alex73.android.common.FileInfo;
 
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -128,7 +129,7 @@ public class Step4 extends Step {
     }
 
     boolean needTranslate(FileInfo fi) throws Exception {
-        local.getManifestInfo(fi);
+        fi.readManifestInfo();
 
         ZipFile zip = new ZipFile(fi.localFile);
         ZipEntry en = zip.getEntry("resources.arsc");

@@ -1,6 +1,6 @@
 import java.io.File;
 
-import org.alex73.android.bel.zip.ApkUpdater;
+import org.alex73.android.common.zip.ApkUpdater;
 import org.apache.commons.io.FileUtils;
 
 public class TestApkUpdater {

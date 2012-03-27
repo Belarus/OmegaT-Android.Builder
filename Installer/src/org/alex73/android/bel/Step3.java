@@ -3,6 +3,8 @@ package org.alex73.android.bel;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.alex73.android.common.FileInfo;
+
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;

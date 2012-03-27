@@ -27,7 +27,7 @@ import org.alex73.android.arsc.ManifestInfo;
 import org.alex73.android.arsc.Resources;
 import org.alex73.android.arsc.StringTable;
 import org.alex73.android.bel.Utils;
-import org.alex73.android.bel.zip.ApkUpdater;
+import org.alex73.android.common.zip.ApkUpdater;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;

@@ -2,9 +2,9 @@ import java.io.File;
 import java.io.IOException;
 
 import org.alex73.android.arsc.ManifestInfo;
-import org.alex73.android.bel.FileInfo;
 import org.alex73.android.bel.Utils;
-import org.alex73.android.bel.zip.ApkUpdater;
+import org.alex73.android.common.FileInfo;
+import org.alex73.android.common.zip.ApkUpdater;
 import org.apache.commons.io.FileUtils;
 
 public class PackResources {
@@ -24,7 +24,7 @@ public class PackResources {
             ManifestInfo mi = new ManifestInfo(manifest);
 
             byte[] outResources = PackBinaryResources.processARSC(arsc, "",
-                    UnpackBinaryResources.createSuffix(mi, Utils.sha1(arsc)));
+                    UnpackBinaryResources.createSuffix(mi));
 
             File apkOut = new File(f.getParent() + "/new/", f.getName());
             System.out.println("New apk saved into " + apkOut.getAbsolutePath());

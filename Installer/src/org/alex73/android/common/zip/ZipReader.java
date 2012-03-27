@@ -1,4 +1,4 @@
-package org.alex73.android.bel.zip;
+package org.alex73.android.common.zip;
 
 import java.io.EOFException;
 import java.io.IOException;

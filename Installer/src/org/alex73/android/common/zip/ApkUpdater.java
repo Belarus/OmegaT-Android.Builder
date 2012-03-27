@@ -1,4 +1,4 @@
-package org.alex73.android.bel.zip;
+package org.alex73.android.common.zip;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -114,7 +114,7 @@ public class ApkUpdater {
         }
     }
 
-    public void replace(File apkFile, File outFile, byte[] mark, byte[] newResources) throws Exception {
+    public void replace(File apkFile, File outFile, byte[] newResources) throws Exception {
         ZipReader zip = new ZipReader(new RandomAccessFile(apkFile, "r"));
         ZipReader zipOut = new ZipReader(new RandomAccessFile(outFile, "rw"));
         LEReader in = zip.getReader();
@@ -161,12 +161,12 @@ public class ApkUpdater {
             }
 
             in = null; // больш не карыстаемся
-
+            byte[] mark = new byte[0];
             generateNewEntries(mark, newResources, oldResourceCompressed);
 
             // change dir
             dir.add(dData);
-            dir.add(dMark);
+            // dir.add(dMark);
             end.update(dir);
 
             int opos = o.pos();
@@ -176,12 +176,12 @@ public class ApkUpdater {
             o.writeInt(0x04034b50);
             fData.writeFull(o);
 
-            opos = o.pos();
-            newOffsets.put(fMark.getFileName(), opos);
-            fMark.calcExtraExtra(opos);
+            // opos = o.pos();
+            // newOffsets.put(fMark.getFileName(), opos);
+            // fMark.calcExtraExtra(opos);
 
-            o.writeInt(0x04034b50);
-            fMark.writeFull(o);
+            // o.writeInt(0x04034b50);
+            // fMark.writeFull(o);
 
             end.offsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber = o.pos();
 

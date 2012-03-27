@@ -17,8 +17,8 @@ import org.alex73.android.arsc.Config;
 import org.alex73.android.arsc.ManifestInfo;
 import org.alex73.android.arsc.Package;
 import org.alex73.android.arsc.Resources;
-import org.alex73.android.bel.FileInfo;
 import org.alex73.android.bel.Utils;
+import org.alex73.android.common.FileInfo;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -60,7 +60,7 @@ public class PackBinaryResources {
                         byte[] arsc = BuildAll.extractFile(apk, "resources.arsc");
 
                         byte[] translatedARSC = processARSC(arsc, dirName,
-                                UnpackBinaryResources.createSuffix(mi, Utils.sha1(arsc)));
+                                UnpackBinaryResources.createSuffix(mi));
 
                         FileInfo fi = new FileInfo(null);
                         fi.packageName = mi.getPackageName();
