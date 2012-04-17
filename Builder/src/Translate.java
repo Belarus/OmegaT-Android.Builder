@@ -39,7 +39,7 @@ public class Translate {
         File temp = new File("temp.data");
 
         ZipFile zip = new ZipFile(f);
-        ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(f.getParent() + "/out-"
+        ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(f.getParent() + "/belarusian-"
                 + f.getName()));
         for (Enumeration<? extends ZipEntry> it = zip.entries(); it.hasMoreElements();) {
             ZipEntry en = it.nextElement();
