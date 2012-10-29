@@ -126,12 +126,15 @@ public class StyledString {
 
     static Comparator<Tag> TAGS_COMPARATOR = new Comparator<Tag>() {
         public int compare(Tag lhs, Tag rhs) {
-            int c = lhs.tagName.compareTo(rhs.tagName);
+            int c = 0;
             if (c == 0) {
                 c = lhs.start - rhs.start;
             }
             if (c == 0) {
-                c = lhs.end - rhs.end;
+                c = rhs.end - lhs.end;
+            }
+            if (c == 0) {
+                c = lhs.tagName.compareTo(rhs.tagName);
             }
             return c;
         }

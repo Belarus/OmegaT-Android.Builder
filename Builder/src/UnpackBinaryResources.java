@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -19,6 +20,7 @@ import org.alex73.android.arsc.ManifestInfo;
 import org.alex73.android.arsc.Resources;
 import org.alex73.android.arsc.StringTable;
 import org.alex73.android.bel.Utils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 
@@ -79,7 +81,12 @@ public class UnpackBinaryResources {
         ChunkWriter wr = rs.getStringTable().write();
         byte[] readed = rs.getStringTable().getOriginalBytes();
         byte[] written = wr.getBytes();
-        Assert.assertArrayEquals(readed, written);
+
+        if (!Arrays.equals(readed, written)) {
+            FileUtils.writeByteArrayToFile(new File("/tmp/st-orig"), readed);
+            FileUtils.writeByteArrayToFile(new File("/tmp/st-new"), written);
+            throw new Exception("StringTables are differ: /tmp/st-orig, /tmp/st-new");
+        }
 
         checkAllStrings(rs.getStringTable());
 
@@ -90,7 +97,6 @@ public class UnpackBinaryResources {
         ChunkWriter rsWriterOriginal = rs.write();
 
         Assert.assertArrayEquals(arsc, rsWriterOriginal.getBytes());
-
     }
 
     protected static void checkAllStrings(final StringTable table) throws Exception {
@@ -119,8 +125,8 @@ public class UnpackBinaryResources {
 
     static void readTranslationInfo() throws Exception {
         JAXBContext ctx = JAXBContext.newInstance(Translation.class);
-        translationInfo = (Translation) ctx.createUnmarshaller().unmarshal(
-                new File(projectPath + "../translation.xml"));
+        translationInfo = (Translation) ctx.createUnmarshaller()
+                .unmarshal(new File(projectPath + "../translation.xml"));
     }
 
     static String getDirName(String packageName, String versionName) {

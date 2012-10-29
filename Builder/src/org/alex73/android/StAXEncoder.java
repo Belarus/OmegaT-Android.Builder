@@ -202,7 +202,11 @@ public class StAXEncoder implements IEncoder {
 
         write(wr, str);
 
-        return o.toString();
+        String r = o.toString();
+        if (r.startsWith("@")) {
+            r = '\\' + r;
+        }
+        return r;
     }
 
     protected void write(XMLStreamWriter wr, StyledString str) throws Exception {

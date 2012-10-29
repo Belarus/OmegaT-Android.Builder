@@ -149,8 +149,8 @@ public class StAXDecoderReader {
     }
 
     public static String postProcessPartString(String str) {
-        str = str.replaceAll("^\\s+", " ");
-        str = str.replaceAll("\\s+$", " ");
+        //str = str.replaceAll("^\\s+", " ");
+        //str = str.replaceAll("\\s+$", " ");
         return str;
     }
 

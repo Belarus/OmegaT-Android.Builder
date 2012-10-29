@@ -14,6 +14,7 @@ import org.alex73.android.Assert;
 import org.alex73.android.StyledString;
 
 public class StringTable extends BaseChunked {
+    static boolean ALLOW_MERGE_DUPLICATES = true;
     private static final int UTF8_FLAG = 0x00000100;
 
     private static final Charset UTF_16LE = Charset.forName("UTF-16LE");
@@ -64,8 +65,8 @@ public class StringTable extends BaseChunked {
 
         if (stylesOffset != 0) {
             int size2 = (rd.header.chunkSize - stylesOffset);
-            if ((size % 4) != 0) {
-                throw new Exception("Style data size is not multiple of 4 (" + size + ").");
+            if ((size2 % 4) != 0) {
+                throw new Exception("Style data size is not multiple of 4 (" + size2 + ").");
             }
             read_styles = rd.readIntArray(size2 / 4);
         }
@@ -130,7 +131,7 @@ public class StringTable extends BaseChunked {
         for (int i = 0; i < strings.size(); i++) {
             String s = strings.get(i);
             Integer existOffset = stringOffsetMap.get(s);
-            if (existOffset != null) {
+            if (existOffset != null && ALLOW_MERGE_DUPLICATES) {
                 // ужо было
                 offsetsString[i].setValue(existOffset);
             } else {
@@ -278,7 +279,6 @@ public class StringTable extends BaseChunked {
     private String getReadString(int index) {
         int offset = read_stringOffsets[index];
         int length;
-
         if (isUTF8()) {
             offset += getVarint(read_strings, offset)[1];
             int[] varint = getVarint(read_strings, offset);
