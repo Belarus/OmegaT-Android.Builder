@@ -45,8 +45,7 @@ public class StAXDecoderReader {
     }
 
     public void read(File inFile) throws Exception {
-        XMLEventReader rd = factory
-                .createXMLEventReader(new BufferedInputStream(new FileInputStream(inFile)));
+        XMLEventReader rd = factory.createXMLEventReader(new BufferedInputStream(new FileInputStream(inFile)));
 
         String name = null;
         StyledString str = null;
@@ -107,6 +106,7 @@ public class StAXDecoderReader {
         List<StyledString.Tag> tags = new ArrayList<StyledString.Tag>();
         Stack<StyledString.Tag> tagsStack = new Stack<StyledString.Tag>();
 
+        boolean linkToOtherString = false;
         currentString.setLength(0);
         while (true) {
             XMLEvent e = rd.nextEvent();
@@ -130,12 +130,19 @@ public class StAXDecoderReader {
                     StyledString result = new StyledString();
                     result.raw = currentString.toString();
                     result.tags = tags.toArray(new StyledString.Tag[tags.size()]);
-                    return postProcessString(result);
+                    if (linkToOtherString) {
+                        return null;
+                    } else {
+                        return postProcessString(result);
+                    }
                 }
                 StyledString.Tag tagEnd = tagsStack.pop();
                 tagEnd.end = currentString.length() - 1;
                 break;
             case XMLEvent.CHARACTERS:
+                if (currentString.length() == 0 && e.asCharacters().getData().startsWith("@")) {
+                    linkToOtherString = true;
+                }
                 String text = postProcessPartString(e.asCharacters().getData());
                 currentString.append(text);
                 break;
@@ -149,8 +156,52 @@ public class StAXDecoderReader {
     }
 
     public static String postProcessPartString(String str) {
-        //str = str.replaceAll("^\\s+", " ");
-        //str = str.replaceAll("\\s+$", " ");
+        // str = str.replaceAll("^\\s+", " ");
+        // str = str.replaceAll("\\s+$", " ");
+
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            char cNext;
+            try {
+                cNext = str.charAt(i + 1);
+            } catch (StringIndexOutOfBoundsException ex) {
+                cNext = 0;
+            }
+            switch (c) {
+            case '\\':
+                switch (cNext) {
+                case '"':
+                case '\'':
+                case '\\':
+                case ' ':
+                case '@':
+                case '?':
+                case '’':
+                    str = str.substring(0, i) + cNext + str.substring(i + 2);
+                    break;
+                case 'r':
+                    str = str.substring(0, i) + '\r' + str.substring(i + 2);
+                    break;
+                case 'n':
+                    str = str.substring(0, i) + '\n' + str.substring(i + 2);
+                    break;
+                case '\n':// hack for ics
+                    str = str.substring(0, i) + '\n' + str.substring(i + 2);
+                    break;
+                case 't':
+                    str = str.substring(0, i) + '\t' + str.substring(i + 2);
+                    break;
+                case 'u':
+                    String num = str.substring(i + 2, i + 6);
+                    str = str.substring(0, i) + ((char) Integer.parseInt(num, 16)) + str.substring(i + 6);
+                    break;
+                default:
+                    Assert.fail("Unknown quoted char: \\" + cNext);
+                }
+                break;
+            }
+        }
+
         return str;
     }
 
@@ -177,66 +228,7 @@ public class StAXDecoderReader {
         // }
         // }
         // link to other string ?
-        if (str.raw.startsWith("@")) {
-            return null;
-        }
 
-        // remove quotes
-        boolean inQuotes = false;
-        for (int i = 0; i < str.raw.length(); i++) {
-            char c = str.raw.charAt(i);
-            char cNext;
-            try {
-                cNext = str.raw.charAt(i + 1);
-            } catch (StringIndexOutOfBoundsException ex) {
-                cNext = 0;
-            }
-            switch (c) {
-            case '"':
-                inQuotes = !inQuotes;
-                str.decreaseTagsPos(i, 1);
-                str.raw = str.raw.substring(0, i) + str.raw.substring(i + 1);
-                break;
-            case '\\':
-                switch (cNext) {
-                case '"':
-                case '\'':
-                case '\\':
-                case ' ':
-                case '@':
-                case '?':
-                case '’':
-                    str.decreaseTagsPos(i, 1);
-                    str.raw = str.raw.substring(0, i) + cNext + str.raw.substring(i + 2);
-                    break;
-                case 'r':
-                    str.decreaseTagsPos(i, 1);
-                    str.raw = str.raw.substring(0, i) + '\r' + str.raw.substring(i + 2);
-                    break;
-                case 'n':
-                    str.decreaseTagsPos(i, 1);
-                    str.raw = str.raw.substring(0, i) + '\n' + str.raw.substring(i + 2);
-                    break;
-                case '\n':// hack for ics
-                    str.decreaseTagsPos(i, 1);
-                    str.raw = str.raw.substring(0, i) + '\n' + str.raw.substring(i + 2);
-                    break;
-                case 't':
-                    str.decreaseTagsPos(i, 1);
-                    str.raw = str.raw.substring(0, i) + '\t' + str.raw.substring(i + 2);
-                    break;
-                case 'u':
-                    String num = str.raw.substring(i + 2, i + 6);
-                    str.decreaseTagsPos(i, 5);
-                    str.raw = str.raw.substring(0, i) + ((char) Integer.parseInt(num, 16))
-                            + str.raw.substring(i + 6);
-                    break;
-                default:
-                    Assert.fail("Unknown quoted char: \\" + cNext);
-                }
-                break;
-            }
-        }
         return str;
     }
 }

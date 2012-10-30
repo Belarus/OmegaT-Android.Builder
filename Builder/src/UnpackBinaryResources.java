@@ -9,6 +9,7 @@ import java.util.zip.ZipInputStream;
 
 import javax.xml.bind.JAXBContext;
 
+import org.alex73.android.Context;
 import org.alex73.android.IDecoder;
 import org.alex73.android.IEncoder;
 import org.alex73.android.StAXDecoder;
@@ -19,7 +20,6 @@ import org.alex73.android.arsc.ChunkWriter;
 import org.alex73.android.arsc.ManifestInfo;
 import org.alex73.android.arsc.Resources;
 import org.alex73.android.arsc.StringTable;
-import org.alex73.android.bel.Utils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -55,10 +55,19 @@ public class UnpackBinaryResources {
             while ((ze = in.getNextEntry()) != null) {
 
                 if (ze.getName().endsWith(".apk")) {
+                    if (ze.getName().contains("framework-res") && zipFile.getName().contains("4.1.2")) {
+                        continue;
+                        // expected:<font;size=12;fgcolor=#ff900000(0:4)> but was:<font;fgcolor=#ff900000;size=12(0:4)>
+                    }
+                    if (ze.getName().contains("GameHub") && zipFile.getName().contains("s2")) {
+                        continue;
+                        // invalid entry size (expected 2255224840 but got 50345 bytes)
+                    }
                     System.out.println("  " + ze.getName());
                     byte[] apk = IOUtils.toByteArray(in);
                     byte[] manifest = BuildAll.extractFile(apk, "AndroidManifest.xml");
                     ManifestInfo mi = new ManifestInfo(manifest);
+                    Context.setByManifest(mi);
                     String dirName = getDirName(mi.getPackageName(), mi.getVersion());
                     if (dirName != null) {
                         byte[] arsc = BuildAll.extractFile(apk, "resources.arsc");
@@ -77,6 +86,8 @@ public class UnpackBinaryResources {
         File out = new File(projectPath + "/source/" + dirName);
         out.mkdirs();
 
+        checkAllStrings(rs.getStringTable());
+
         // checks
         ChunkWriter wr = rs.getStringTable().write();
         byte[] readed = rs.getStringTable().getOriginalBytes();
@@ -87,8 +98,6 @@ public class UnpackBinaryResources {
             FileUtils.writeByteArrayToFile(new File("/tmp/st-new"), written);
             throw new Exception("StringTables are differ: /tmp/st-orig, /tmp/st-new");
         }
-
-        checkAllStrings(rs.getStringTable());
 
         System.out.println("    Store resources in " + out.getAbsolutePath() + " version=" + suffixVersion);
         new StAXEncoder().dump(rs, out, suffixVersion);

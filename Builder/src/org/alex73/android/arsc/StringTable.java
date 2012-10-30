@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.alex73.android.Assert;
+import org.alex73.android.Context;
 import org.alex73.android.StyledString;
 
 public class StringTable extends BaseChunked {
-    static boolean ALLOW_MERGE_DUPLICATES = true;
     private static final int UTF8_FLAG = 0x00000100;
 
     private static final Charset UTF_16LE = Charset.forName("UTF-16LE");
@@ -131,7 +131,7 @@ public class StringTable extends BaseChunked {
         for (int i = 0; i < strings.size(); i++) {
             String s = strings.get(i);
             Integer existOffset = stringOffsetMap.get(s);
-            if (existOffset != null && ALLOW_MERGE_DUPLICATES) {
+            if (existOffset != null && Context.ALLOW_MERGE_DUPLICATES) {
                 // ужо было
                 offsetsString[i].setValue(existOffset);
             } else {
