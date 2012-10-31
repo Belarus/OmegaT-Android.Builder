@@ -1,24 +1,11 @@
 package org.alex73.android;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
-import java.util.TreeMap;
 
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.events.Attribute;
-import javax.xml.stream.events.Characters;
-import javax.xml.stream.events.EndElement;
-import javax.xml.stream.events.StartElement;
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
 
 import org.alex73.android.arsc.ChunkReader;
@@ -26,7 +13,7 @@ import org.alex73.android.arsc.Config;
 import org.alex73.android.arsc.Entry;
 import org.alex73.android.arsc.Resources;
 
-public class StAXDecoder extends StAXDecoderReader implements IDecoder {
+public class StAXDecoder extends StAXDecoderReader2 implements IDecoder {
 
     public void reads(Resources rs, File inDir, String versionSuffix) throws Exception {
         for (org.alex73.android.arsc.Package pkg : rs.getPackages()) {
@@ -140,13 +127,9 @@ public class StAXDecoder extends StAXDecoderReader implements IDecoder {
 
     @Override
     public StyledString unmarshall(String str) throws Exception {
-        XMLEventReader rd = factory.createXMLEventReader(new StringReader("<ROOT>" + str + "</ROOT>"));
+        XMLStreamReader rd = factory.createXMLStreamReader(new StringReader("<ROOT>" + str + "</ROOT>"));
 
-        XMLEvent e;
-        e = rd.nextEvent();
-        Assert.assertEquals("", XMLEvent.START_DOCUMENT, e.getEventType());
-        e = rd.nextEvent();
-        Assert.assertEquals("", XMLEvent.START_ELEMENT, e.getEventType());
+        Assert.assertEquals("", XMLEvent.START_ELEMENT, rd.next());
 
         return read(rd);
     }

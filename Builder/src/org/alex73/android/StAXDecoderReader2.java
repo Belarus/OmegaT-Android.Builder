@@ -5,21 +5,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.TreeMap;
 
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.events.Attribute;
-import javax.xml.stream.events.EndElement;
-import javax.xml.stream.events.StartElement;
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
 
-public class StAXDecoderReader {
+public class StAXDecoderReader2 {
     protected XMLInputFactory factory;
 
     private Map<String, StyledString> strings = new HashMap<String, StyledString>();
@@ -28,7 +23,7 @@ public class StAXDecoderReader {
 
     private StringBuilder currentString = new StringBuilder();
 
-    public StAXDecoderReader() {
+    public StAXDecoderReader2() {
         factory = XMLInputFactory.newFactory();
     }
 
@@ -45,42 +40,41 @@ public class StAXDecoderReader {
     }
 
     public void read(File inFile) throws Exception {
-        XMLEventReader rd = factory.createXMLEventReader(new BufferedInputStream(new FileInputStream(inFile)));
+        XMLStreamReader rd = factory.createXMLStreamReader(new BufferedInputStream(new FileInputStream(inFile)));
 
         String name = null;
         StyledString str = null;
         List<StyledString> array = null;
         Map<String, StyledString> plural = null;
         while (rd.hasNext()) {
-            XMLEvent e = rd.nextEvent();
-            switch (e.getEventType()) {
+            switch (rd.next()) {
             case XMLEvent.START_ELEMENT:
-                StartElement eStart = (StartElement) e;
-                switch (e.asStartElement().getName().getLocalPart()) {
+                Map<String, String> attrs = readAttributes(rd);
+                switch (rd.getLocalName()) {
                 case "string":
-                    name = eStart.getAttributeByName(new QName("name")).getValue();
-                    Attribute product = eStart.getAttributeByName(new QName("product"));
+                    name = attrs.get("name");
+                    String product = attrs.get("product");
                     if (product != null) {
-                        name += '#' + product.getValue();
+                        name += '#' + product;
                     }
                     str = read(rd);
                     Assert.assertNull("", strings.put(name, str));
                     break;
                 case "string-array":
-                    name = eStart.getAttributeByName(new QName("name")).getValue();
+                    name = attrs.get("name");
                     array = new ArrayList<StyledString>();
                     Assert.assertNull("", arrays.put(name, array));
                     break;
                 case "plurals":
-                    name = eStart.getAttributeByName(new QName("name")).getValue();
+                    name = attrs.get("name");
                     plural = new TreeMap<String, StyledString>();
                     Assert.assertNull("", plurals.put(name, plural));
                     break;
                 case "item":
-                    Attribute quantity = eStart.getAttributeByName(new QName("quantity"));
+                    String quantity = attrs.get("quantity");
                     str = read(rd);
                     if (plural != null && quantity != null) {
-                        Assert.assertNull("", plural.put(quantity.getValue(), str));
+                        Assert.assertNull("", plural.put(quantity, str));
                     } else if (array != null) {
                         array.add(str);
                     }
@@ -94,7 +88,7 @@ public class StAXDecoderReader {
                 case "eat-comment":
                     break;
                 default:
-                    Assert.fail("Wrong element: " + e);
+                    Assert.fail("Wrong XML element: " + rd.getLocalName());
                 }
                 break;
             }
@@ -102,30 +96,43 @@ public class StAXDecoderReader {
         rd.close();
     }
 
-    protected StyledString read(XMLEventReader rd) throws Exception {
+    protected Map<String, String> readAttributes(XMLStreamReader rd) {
+        Map<String, String> result = new TreeMap<String, String>();
+        for (int i = 0;; i++) {
+            String aName = rd.getAttributeLocalName(i);
+            if (aName != null) {
+                result.put(aName, rd.getAttributeValue(i));
+            } else {
+                break;
+            }
+        }
+        return result;
+    }
+
+    protected StyledString read(XMLStreamReader rd) throws Exception {
         List<StyledString.Tag> tags = new ArrayList<StyledString.Tag>();
         Stack<StyledString.Tag> tagsStack = new Stack<StyledString.Tag>();
 
         boolean linkToOtherString = false;
         currentString.setLength(0);
         while (true) {
-            XMLEvent e = rd.nextEvent();
-
-            switch (e.getEventType()) {
+            switch (rd.next()) {
             case XMLEvent.START_ELEMENT:
-                StartElement eStart = (StartElement) e;
                 StyledString.Tag tagStart = new StyledString.Tag();
                 tagStart.start = currentString.length();
-                tagStart.tagName = eStart.getName().getLocalPart();
-                for (Iterator<Attribute> it = eStart.getAttributes(); it.hasNext();) {
-                    Attribute a = it.next();
-                    tagStart.tagName += ";" + a.getName() + "=" + a.getValue();
+                tagStart.tagName = rd.getLocalName();
+                for (int i = 0;; i++) {
+                    String aName = rd.getAttributeLocalName(i);
+                    if (aName != null) {
+                        tagStart.tagName += ";" + aName + "=" + rd.getAttributeValue(i);
+                    } else {
+                        break;
+                    }
                 }
                 tags.add(tagStart);
                 tagsStack.push(tagStart);
                 break;
             case XMLEvent.END_ELEMENT:
-                EndElement eEnd = (EndElement) e;
                 if (tagsStack.isEmpty()) {
                     StyledString result = new StyledString();
                     result.raw = currentString.toString();
@@ -140,25 +147,23 @@ public class StAXDecoderReader {
                 tagEnd.end = currentString.length() - 1;
                 break;
             case XMLEvent.CHARACTERS:
-                if (currentString.length() == 0 && e.asCharacters().getData().startsWith("@")) {
+                String text = rd.getText();
+                if (currentString.length() == 0 && text.startsWith("@")) {
                     linkToOtherString = true;
                 }
-                String text = postProcessPartString(e.asCharacters().getData());
+                text = postProcessPartString(text);
                 currentString.append(text);
                 break;
             case XMLEvent.COMMENT:
                 break;
             default:
-                Assert.fail("Wrong tag: " + e);
+                Assert.fail("Wrong XML event");
                 break;
             }
         }
     }
 
     public static String postProcessPartString(String str) {
-        // str = str.replaceAll("^\\s+", " ");
-        // str = str.replaceAll("\\s+$", " ");
-
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
             char cNext;
@@ -205,30 +210,8 @@ public class StAXDecoderReader {
         return str;
     }
 
-    boolean inQuotes;
-
     public static StyledString postProcessString(StyledString str) {
         str.sortTags();
-
-        // trim
-        // while (str.raw.length() > 0) {
-        // if (str.raw.charAt(0) <= ' ') {
-        // decreaseTagsPos(str, 0, 1);
-        // str.raw = str.raw.substring(1);
-        // } else {
-        // break;
-        // }
-        // }
-        // while (str.raw.length() > 0) {
-        // if (str.raw.charAt(str.raw.length() - 1) == ' ') {
-        // decreaseTagsPos(str, str.raw.length() - 1, 1);
-        // str.raw = str.raw.substring(0, str.raw.length() - 1);
-        // } else {
-        // break;
-        // }
-        // }
-        // link to other string ?
-
         return str;
     }
 }

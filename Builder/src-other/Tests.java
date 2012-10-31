@@ -10,6 +10,7 @@ import java.util.zip.ZipFile;
 
 import org.alex73.android.Assert;
 import org.alex73.android.StAXDecoderReader;
+import org.alex73.android.StAXDecoderReader2;
 import org.alex73.android.StyledString;
 import org.alex73.android.arsc2.ResourceProcessor;
 import org.alex73.android.arsc2.Segmenter;
@@ -47,8 +48,8 @@ public class Tests {
 //        testStAXDecoderReader("a\\n", "a\n");
 //        testStAXDecoderReader("a\\n\\n", "a\n\n");
 
-        Assert.assertTrue("", StAXDecoderReader.postProcessPartString(" \n   a").equals(" a"));
-        Assert.assertTrue("", StAXDecoderReader.postProcessPartString("z\n   ").equals("z "));
+        Assert.assertTrue("", StAXDecoderReader2.postProcessPartString(" \n   a").equals(" a"));
+        Assert.assertTrue("", StAXDecoderReader2.postProcessPartString("z\n   ").equals("z "));
 
         StyledString s1 = new StyledString();
         StyledString s2 = new StyledString();
@@ -72,7 +73,7 @@ public class Tests {
         StyledString str = new StyledString();
         str.tags = new StyledString.Tag[0];
         str.raw = src;
-        str = StAXDecoderReader.postProcessString(str);
+        str = StAXDecoderReader2.postProcessString(str);
         Assert.assertTrue("Result: '" + str.raw + "', Expected: '" + result + "'", result.equals(str.raw));
     }
 

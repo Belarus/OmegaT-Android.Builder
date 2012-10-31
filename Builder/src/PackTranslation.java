@@ -17,7 +17,7 @@ import java.util.zip.GZIPOutputStream;
 import javax.xml.bind.JAXBContext;
 
 import org.alex73.android.Assert;
-import org.alex73.android.StAXDecoderReader;
+import org.alex73.android.StAXDecoderReader2;
 import org.alex73.android.StyledIdString;
 import org.alex73.android.StyledString;
 import org.omegat.core.Core;
@@ -151,9 +151,9 @@ public class PackTranslation {
 
     static void readSourceAndTrans(File inFile, File outFile, Map<StyledIdString, StyledString> collected)
             throws Exception {
-        StAXDecoderReader rdIn = new StAXDecoderReader();
+        StAXDecoderReader2 rdIn = new StAXDecoderReader2();
         rdIn.read(inFile);
-        StAXDecoderReader rdOut = new StAXDecoderReader();
+        StAXDecoderReader2 rdOut = new StAXDecoderReader2();
         rdOut.read(outFile);
         {
             Map<String, StyledString> in = rdIn.getStrings();

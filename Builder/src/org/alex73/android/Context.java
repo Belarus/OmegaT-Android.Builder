@@ -15,5 +15,10 @@ public class Context {
             //
             ALLOW_MERGE_DUPLICATES = false;
         }
+        if (mi.getPackageName().startsWith("android") && mi.getVersion().startsWith("4.1")) {
+            // Settings 4.1.2
+            //
+            ALLOW_MERGE_DUPLICATES = false;
+        }
     }
 }

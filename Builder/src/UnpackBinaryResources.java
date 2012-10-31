@@ -55,10 +55,6 @@ public class UnpackBinaryResources {
             while ((ze = in.getNextEntry()) != null) {
 
                 if (ze.getName().endsWith(".apk")) {
-                    if (ze.getName().contains("framework-res") && zipFile.getName().contains("4.1.2")) {
-                        continue;
-                        // expected:<font;size=12;fgcolor=#ff900000(0:4)> but was:<font;fgcolor=#ff900000;size=12(0:4)>
-                    }
                     if (ze.getName().contains("GameHub") && zipFile.getName().contains("s2")) {
                         continue;
                         // invalid entry size (expected 2255224840 but got 50345 bytes)
