@@ -113,7 +113,6 @@ public class StAXDecoderReader2 {
         List<StyledString.Tag> tags = new ArrayList<StyledString.Tag>();
         Stack<StyledString.Tag> tagsStack = new Stack<StyledString.Tag>();
 
-        boolean linkToOtherString = false;
         currentString.setLength(0);
         while (true) {
             switch (rd.next()) {
@@ -134,25 +133,13 @@ public class StAXDecoderReader2 {
                 break;
             case XMLEvent.END_ELEMENT:
                 if (tagsStack.isEmpty()) {
-                    StyledString result = new StyledString();
-                    result.raw = currentString.toString();
-                    result.tags = tags.toArray(new StyledString.Tag[tags.size()]);
-                    if (linkToOtherString) {
-                        return null;
-                    } else {
-                        return postProcessString(result);
-                    }
+                    return postProcessString(currentString, tags);
                 }
                 StyledString.Tag tagEnd = tagsStack.pop();
                 tagEnd.end = currentString.length() - 1;
                 break;
             case XMLEvent.CHARACTERS:
-                String text = rd.getText();
-                if (currentString.length() == 0 && text.startsWith("@")) {
-                    linkToOtherString = true;
-                }
-                text = postProcessPartString(text);
-                currentString.append(text);
+                currentString.append(rd.getText());
                 break;
             case XMLEvent.COMMENT:
                 break;
@@ -163,17 +150,18 @@ public class StAXDecoderReader2 {
         }
     }
 
-    public static String postProcessPartString(String str) {
+    public static StyledString postProcessString(StringBuilder str, List<StyledString.Tag> tags) {
+        if (str.length() > 0 && str.charAt(0) == '@') {
+            return null;
+        }
+
+        StringBuilder out = new StringBuilder(str.length());
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
-            char cNext;
-            try {
-                cNext = str.charAt(i + 1);
-            } catch (StringIndexOutOfBoundsException ex) {
-                cNext = 0;
-            }
             switch (c) {
             case '\\':
+                int skip = 1;
+                char cNext = str.charAt(i + 1);
                 switch (cNext) {
                 case '"':
                 case '\'':
@@ -182,36 +170,46 @@ public class StAXDecoderReader2 {
                 case '@':
                 case '?':
                 case '’':
-                    str = str.substring(0, i) + cNext + str.substring(i + 2);
+                    c = cNext;
                     break;
                 case 'r':
-                    str = str.substring(0, i) + '\r' + str.substring(i + 2);
+                    c = '\r';
                     break;
                 case 'n':
-                    str = str.substring(0, i) + '\n' + str.substring(i + 2);
+                    c = '\n';
                     break;
                 case '\n':// hack for ics
-                    str = str.substring(0, i) + '\n' + str.substring(i + 2);
+                    c = '\n';
                     break;
                 case 't':
-                    str = str.substring(0, i) + '\t' + str.substring(i + 2);
+                    c = '\t';
                     break;
                 case 'u':
                     String num = str.substring(i + 2, i + 6);
-                    str = str.substring(0, i) + ((char) Integer.parseInt(num, 16)) + str.substring(i + 6);
+                    c = ((char) Integer.parseInt(num, 16));
+                    skip += 4;
                     break;
                 default:
-                    Assert.fail("Unknown quoted char: \\" + cNext);
+                    Assert.fail("Unknown quoted char: '\\" + cNext + "'");
                 }
+                for (StyledString.Tag t : tags) {
+                    if (t.start > out.length()) {
+                        t.start -= skip;
+                    }
+                    if (t.end > out.length()) {
+                        t.end -= skip;
+                    }
+                }
+                i += skip;
                 break;
             }
+            out.append(c);
         }
 
-        return str;
-    }
-
-    public static StyledString postProcessString(StyledString str) {
-        str.sortTags();
-        return str;
+        StyledString result = new StyledString();
+        result.raw = out.toString();
+        result.tags = tags.toArray(new StyledString.Tag[tags.size()]);
+        result.sortTags();
+        return result;
     }
 }

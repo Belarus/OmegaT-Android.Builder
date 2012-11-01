@@ -7,11 +7,12 @@ import java.nio.charset.CharsetDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.alex73.android.Assert;
-import org.alex73.android.Context;
 import org.alex73.android.StyledString;
 
 public class StringTable extends BaseChunked {
@@ -31,6 +32,8 @@ public class StringTable extends BaseChunked {
     private int flags;
     private List<String> strings;
     private List<Tag[]> styles;
+
+    private boolean allowMergeDuplicates;
 
     public static class Tag {
         public int tagIndex;
@@ -73,6 +76,8 @@ public class StringTable extends BaseChunked {
 
         rd.close();
 
+        allowMergeDuplicates = calcDuplicates();
+
         // construct internal structures
         strings = new ArrayList<String>(read_stringOffsets.length);
         for (int i = 0; i < read_stringOffsets.length; i++) {
@@ -106,6 +111,18 @@ public class StringTable extends BaseChunked {
         read_styles = null;
     }
 
+    private boolean calcDuplicates() {
+        Set<Integer> offsets = new HashSet<Integer>();
+        for (int i = 0; i < read_stringOffsets.length; i++) {
+            int offset = read_stringOffsets[i];
+            if (offsets.contains(offset)) {
+                return true;
+            }
+            offsets.add(offset);
+        }
+        return false;
+    }
+
     public ChunkWriter write() {
         ChunkWriter wr = new ChunkWriter(rd);
 
@@ -131,7 +148,7 @@ public class StringTable extends BaseChunked {
         for (int i = 0; i < strings.size(); i++) {
             String s = strings.get(i);
             Integer existOffset = stringOffsetMap.get(s);
-            if (existOffset != null && Context.ALLOW_MERGE_DUPLICATES) {
+            if (existOffset != null && allowMergeDuplicates) {
                 // ужо было
                 offsetsString[i].setValue(existOffset);
             } else {
@@ -217,8 +234,8 @@ public class StringTable extends BaseChunked {
 
     private String decodeString(int offset, int length) {
         try {
-            return (isUTF8() ? UTF8_DECODER : UTF16LE_DECODER).decode(
-                    ByteBuffer.wrap(read_strings, offset, length)).toString();
+            return (isUTF8() ? UTF8_DECODER : UTF16LE_DECODER).decode(ByteBuffer.wrap(read_strings, offset, length))
+                    .toString();
         } catch (CharacterCodingException ex) {
             throw new RuntimeException(ex);
         }
@@ -268,7 +285,7 @@ public class StringTable extends BaseChunked {
     public int getStringIndex(String raw) {
         return strings.indexOf(raw);
     }
-    
+
     public int getStringCount() {
         return strings.size();
     }

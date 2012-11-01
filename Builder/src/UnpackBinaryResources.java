@@ -53,16 +53,16 @@ public class UnpackBinaryResources {
 
             ZipEntry ze;
             while ((ze = in.getNextEntry()) != null) {
-
+                if (ze.getName().contains("GameHub") && zipFile.getName().contains("s2")) {
+                    // invalid entry size (expected 2255224840 but got 50345
+                    // bytes)
+                    continue;
+                }
                 if (ze.getName().endsWith(".apk")) {
-                    if (ze.getName().contains("GameHub") && zipFile.getName().contains("s2")) {
-                        continue;
-                        // invalid entry size (expected 2255224840 but got 50345 bytes)
-                    }
-                    System.out.println("  " + ze.getName());
                     byte[] apk = IOUtils.toByteArray(in);
                     byte[] manifest = BuildAll.extractFile(apk, "AndroidManifest.xml");
                     ManifestInfo mi = new ManifestInfo(manifest);
+                    System.out.println("  " + ze.getName() + "  p:" + mi.getPackageName() + " v:" + mi.getVersion());
                     Context.setByManifest(mi);
                     String dirName = getDirName(mi.getPackageName(), mi.getVersion());
                     if (dirName != null) {
