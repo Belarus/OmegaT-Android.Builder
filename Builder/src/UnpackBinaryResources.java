@@ -67,7 +67,9 @@ public class UnpackBinaryResources {
                     String dirName = getDirName(mi.getPackageName(), mi.getVersion());
                     if (dirName != null) {
                         byte[] arsc = BuildAll.extractFile(apk, "resources.arsc");
-                        processARSC(arsc, dirName, createSuffix(mi));
+                        if (arsc != null) {
+                            processARSC(arsc, dirName, createSuffix(mi));
+                        }
                     }
                 }
                 System.gc();
