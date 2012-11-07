@@ -18,6 +18,7 @@ public abstract class Step extends Thread {
     protected Button btnCancel;
     protected Button btnNext;
     protected ProgressBar progress;
+    protected String phase="";
 
     boolean stopped;
     protected LocalStorage local = new LocalStorage();
@@ -39,20 +40,18 @@ public abstract class Step extends Thread {
             process();
             if (stopped) {
                 ui.runOnUiThread(new Runnable() {
-                    @Override
                     public void run() {
                         new StepFinish(ui, ui.getResources().getText(R.string.textStopped)).doit();
                     }
                 });
             }
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             StringWriter wr = new StringWriter();
             ex.printStackTrace(new PrintWriter(wr));
             final String s = wr.toString();
             ui.runOnUiThread(new Runnable() {
-                @Override
                 public void run() {
-                    new StepFinish(ui, ui.getResources().getText(R.string.textError) + s).doit();
+                    new StepFinish(ui, ui.getResources().getText(R.string.textError) + " (" + phase + "): " + s).doit();
                 }
             });
         }

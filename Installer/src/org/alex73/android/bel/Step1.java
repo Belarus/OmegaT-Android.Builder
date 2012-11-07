@@ -25,14 +25,12 @@ public class Step1 extends Step {
 
         if (!rooted) {
             ui.runOnUiThread(new Runnable() {
-                @Override
                 public void run() {
                     new StepFinish(ui, ui.getResources().getText(R.string.msgRoot)).doit();
                 }
             });
         } else {
             ui.runOnUiThread(new Runnable() {
-                @Override
                 public void run() {
                     Linkify.addLinks(textLog, Linkify.ALL);
                 }

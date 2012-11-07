@@ -15,6 +15,7 @@ public class StepFinish extends Step {
     }
 
     protected void show() {
+        phase = "stepFinish";
         ui.setContentView(R.layout.step5);
 
         textLog = (TextView) ui.findViewById(R.id.textLog5);

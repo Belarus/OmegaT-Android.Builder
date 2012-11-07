@@ -65,7 +65,6 @@ public class Step2 extends Step {
         }
 
         ui.runOnUiThread(new Runnable() {
-            @Override
             public void run() {
                 new Step3(ui).doit();
             }

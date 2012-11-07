@@ -14,19 +14,22 @@ g2() {
   rm -rf /data/android/$1/*
   pushd /data/android/$1 || exit
   ../repo init -u $2 -b $3 || exit 1
-  ../repo sync -l || exit 1
+  ../repo sync -l
   popd
   java -cp classes:lib/commons-io-1.4.jar UnpackCyanogenResources /data/android/$1 $4 || exit 1
 }
 
-g cyanogen git://github.com/CyanogenMod/android.git froyo-stable cyanogen-froyo
-g cyanogen git://github.com/CyanogenMod/android.git gingerbread-release cyanogen-gingerbread
-g cyanogen git://github.com/CyanogenMod/android.git ics-release cyanogen-ics
-g cyanogen git://github.com/CyanogenMod/android.git jellybean cyanogen-jellybean
+rm -rf ../../Android.OmegaT/Android/source
 
-g source https://android.googlesource.com/platform/manifest froyo-release source-froyo
-g source https://android.googlesource.com/platform/manifest gingerbread-release source-gingerbread
-g source https://android.googlesource.com/platform/manifest ics-mr1-release source-ics
-g source https://android.googlesource.com/platform/manifest jb-mr0-release source-jb
+g cyanogen git://github.com/CyanogenMod/android.git froyo-stable           cyanogen-2.2
+g cyanogen git://github.com/CyanogenMod/android.git gingerbread-release    cyanogen-2.3
+g cyanogen git://github.com/CyanogenMod/android.git ics-release            cyanogen-4.0
+g cyanogen git://github.com/CyanogenMod/android.git jellybean              cyanogen-4.1
 
-java -cp classes UnpackBinaryResources /data/android/binaries
+#see page https://android.googlesource.com/platform/manifest/ for list of branches
+g source https://android.googlesource.com/platform/manifest android-2.2.3_r2.1    android-2.2
+g source https://android.googlesource.com/platform/manifest android-2.3.7_r1      android-2.3
+g source https://android.googlesource.com/platform/manifest android-4.0.4_r2.1    android-4.0
+g source https://android.googlesource.com/platform/manifest android-4.1.2_r1      android-4.1
+
+java -cp classes:lib/commons-io-1.4.jar:lib/junit-4.10.jar:../Installer/bin/classes UnpackBinaryResources /data/android/binaries

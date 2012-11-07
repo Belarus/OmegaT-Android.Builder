@@ -86,19 +86,20 @@ public class Step4 extends Step {
                 return;
             }
             incProgress();
-
+            phase = "захоўвалі " + fi.localFile.getName();
             showFile(fi.localFile.getName());
             showOperation(R.string.opInstallTranslation);
             local.backupApk(fi.localFile);
 
+            phase = "перакладалі " + fi.localFile.getName();
             translateApk(fi);
+            phase = "";
             if (stopped) {
                 return;
             }
 
             final File ff = fi.localFile;
             ui.runOnUiThread(new Runnable() {
-                @Override
                 public void run() {
                     textLog.setText(textLog.getText() + ff.getName() + " перакладзены\n");
                 }
@@ -121,7 +122,6 @@ public class Step4 extends Step {
         }
 
         ui.runOnUiThread(new Runnable() {
-            @Override
             public void run() {
                 new StepFinish(ui, ui.getResources().getText(R.string.textFinished)).doit();
             }
