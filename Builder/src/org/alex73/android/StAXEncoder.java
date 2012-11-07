@@ -12,6 +12,7 @@ import org.alex73.android.StyledString.Tag;
 import org.alex73.android.arsc.Config;
 import org.alex73.android.arsc.Entry;
 import org.alex73.android.arsc.Resources;
+import org.alex73.android.arsc2.LightString;
 import org.apache.commons.io.FileUtils;
 
 import android.schema.ResXmlStringArray;
@@ -215,7 +216,7 @@ public class StAXEncoder implements IEncoder {
         for (int i = 0; i < str.raw.length(); i++) {
             for (int j = 0; j < str.tags.length; j++) {
                 if (str.tags[j].start == i) {
-                    String[] ta = str.tags[j].tagName.split(";");
+                    String[] ta = str.tags[j].tagName.toString().split(";");
                     wr.writeStartElement(ta[0]);
                     for (int k = 1; k < ta.length; k++) {
                         int pos = ta[k].indexOf('=');
@@ -235,9 +236,10 @@ public class StAXEncoder implements IEncoder {
 
     StringBuilder writeTextBuffer = new StringBuilder();
 
-    protected void writeText(XMLStreamWriter wr, String text) throws Exception {
+    protected void writeText(XMLStreamWriter wr, LightString text) throws Exception {
         writeTextBuffer.setLength(0);
-        for (char c : text.toCharArray()) {
+        for (int i=0;i<text.length();i++) {
+            char c = text.charAt(i);
             switch (c) {
             case '\n':
                 writeTextBuffer.append("\\n");

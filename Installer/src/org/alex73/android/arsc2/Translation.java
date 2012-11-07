@@ -11,10 +11,10 @@ import org.alex73.android.StyledIdString;
 import org.alex73.android.StyledString;
 
 public class Translation {
-    String text;
+    char[] text;
 
-    public Map<String, String> defaults;
-    public Map<String, Map<StyledIdString, StyledString>> exact = new HashMap<String, Map<StyledIdString, StyledString>>();
+    public Map<LightString, LightString> defaults;
+    public Map<LightString, Map<StyledIdString, StyledString>> exact = new HashMap<LightString, Map<StyledIdString, StyledString>>();
 
     public Translation(InputStream in) throws IOException {
         DataInputStream data = new DataInputStream(new BufferedInputStream(in, 16384));
@@ -22,16 +22,16 @@ public class Translation {
         readText(data);
 
         int defaultsCount = data.readInt();
-        defaults = new HashMap<String, String>(defaultsCount);
+        defaults = new HashMap<LightString, LightString>(defaultsCount);
         for (int i = 0; i < defaultsCount; i++) {
-            String source = readString(data);
-            String translation = readString(data);
+            LightString source = readString(data);
+            LightString translation = readString(data);
             defaults.put(source, translation);
         }
 
         int packagesCount = data.readInt();
         for (int i = 0; i < packagesCount; i++) {
-            String pkg = readString(data);
+            LightString pkg = readString(data);
             int count = data.readInt();
             Map<StyledIdString, StyledString> map = new HashMap<StyledIdString, StyledString>(count);
             for (int j = 0; j < count; j++) {
@@ -51,14 +51,14 @@ public class Translation {
         int strsz = data.readInt();
         byte[] strb = new byte[strsz];
         data.readFully(strb);
-        text = new String(strb, "UTF-8");
+        text = new String(strb, "UTF-8").toCharArray();
         strb = null;
     }
 
-    private String readString(DataInputStream data) throws IOException {
+    private LightString readString(DataInputStream data) throws IOException {
         int pos = data.readInt();
         int len = data.readShort();
-        return text.substring(pos, pos + len);
+        return new LightString(text, pos, len);
     }
 
     private StyledString readStyledString(DataInputStream data) throws IOException {
@@ -111,7 +111,7 @@ public class Translation {
         }
 
         if (!source.hasTags()) {
-            String defaultTranslation = defaults.get(source.raw);
+            LightString defaultTranslation = defaults.get(source.raw);
             if (defaultTranslation != null) {
                 StyledString str = new StyledString();
                 str.raw = defaultTranslation;

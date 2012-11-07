@@ -5,13 +5,15 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.alex73.android.arsc2.LightString;
+
 public class StyledString {
     public final static Tag[] NO_TAGS = new Tag[0];
-    public String raw;
+    public LightString raw;
     public Tag[] tags;
 
     public static class Tag {
-        public String tagName;
+        public LightString tagName;
         public int start;
         public int end;
 
@@ -93,11 +95,11 @@ public class StyledString {
         for (int i = 0; i < raw.length(); i++) {
             if (raw.charAt(i) <= ' ') {
                 if (wasSpace) {
-                    raw = raw.substring(0, i) + raw.substring(i + 1);
+                    raw = new LightString( raw.subSequence(0, i) + "" + raw.subSequence(i + 1, raw.length()));
                     decreaseTagsPos(i, 1);
                     i--;
                 } else {
-                    raw = raw.substring(0, i) + ' ' + raw.substring(i + 1);
+                    raw = new LightString(raw.subSequence(0, i) + " " + raw.subSequence(i + 1, raw.length()));
                     wasSpace = true;
                 }
             } else {

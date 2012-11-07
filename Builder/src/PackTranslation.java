@@ -44,9 +44,9 @@ public class PackTranslation {
     static Set<String> packages = new TreeSet<String>();
     static Map<String, String> defaults = new HashMap<String, String>(20000);
     static Map<String, Map<StyledIdString, StyledString>> exact = new TreeMap<String, Map<StyledIdString, StyledString>>();
-    static Set<String> usedTags = new TreeSet<String>();
+    static Set<CharSequence> usedTags = new TreeSet<CharSequence>();
     static StringBuilder outstr = new StringBuilder(1000000);
-    static Map<String, Integer> outstrpos = new HashMap<String, Integer>();
+    static Map<CharSequence, Integer> outstrpos = new HashMap<CharSequence, Integer>();
 
     public static void main(String[] args) throws Exception {
         RuntimePreferences.setConfigDir("../../Android.OmegaT/Android.settings/");
@@ -106,7 +106,7 @@ public class PackTranslation {
         System.out.println("countTranslated = " + countTranslations);
         System.out.println("countPackages = " + packages.size());
         System.out.print("Used tags: ");
-        for (String tn : usedTags) {
+        for (CharSequence tn : usedTags) {
             System.out.print(" <" + tn + ">");
         }
         System.out.println();
@@ -208,7 +208,7 @@ public class PackTranslation {
 
         for (StyledString.Tag tag : origin.tags) {
             int p = tag.tagName.indexOf(';');
-            String tn = p > 0 ? tag.tagName.substring(0, p) : tag.tagName;
+            CharSequence tn = p > 0 ? tag.tagName.subSequence(0, p) : tag.tagName;
             usedTags.add(tn);
         }
 
@@ -244,12 +244,9 @@ public class PackTranslation {
         }
     }
 
-    static void writeString(String str) throws Exception {
+    static void writeString(CharSequence str) throws Exception {
         if (str == null) {
             throw new Exception("Empty string");
-        }
-        if (str.contains("Protect your phone from unauthorized use")) {
-            str = str;// TODO
         }
         if (!outstrpos.containsKey(str)) {
             outstrpos.put(str, outstr.length());

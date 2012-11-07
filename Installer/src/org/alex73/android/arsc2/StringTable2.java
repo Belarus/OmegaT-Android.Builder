@@ -344,7 +344,7 @@ public class StringTable2 {
         out.write((v >>> 8) & 0xFF);
     }
 
-    static final int[] getVarint(byte[] array, int offset) {
+    public static final int[] getVarint(byte[] array, int offset) {
         int val = array[offset];
         boolean more = (val & 0x80) != 0;
         val &= 0x7f;
@@ -356,7 +356,7 @@ public class StringTable2 {
         }
     }
 
-    static byte[] constructVarint(int v) {
+    public static byte[] constructVarint(int v) {
         Assert.assertTrue("", v < 32768);
         if (v < 0x80) {
             return new byte[] { (byte) v };

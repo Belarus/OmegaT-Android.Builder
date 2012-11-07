@@ -2,6 +2,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -9,7 +10,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.alex73.android.Assert;
-import org.alex73.android.StAXDecoderReader;
 import org.alex73.android.StAXDecoderReader2;
 import org.alex73.android.StyledString;
 import org.alex73.android.arsc2.ResourceProcessor;
@@ -29,7 +29,6 @@ public class Tests {
 
         StringTable2.OPTIMIZE = true;
         testTranslations();
-        testRecreate();
 
         String orig = "Test 1 asdjghjkasdhgjk hasd gjk.  Ajhkjashdjkgh jkhjkhjk.\n\n\nZzzzzz.";
         List<String> s = Segmenter.segment(orig);
@@ -47,9 +46,6 @@ public class Tests {
 //        testStAXDecoderReader("a\\u0020", "a ");
 //        testStAXDecoderReader("a\\n", "a\n");
 //        testStAXDecoderReader("a\\n\\n", "a\n\n");
-
-        Assert.assertTrue("", StAXDecoderReader2.postProcessPartString(" \n   a").equals(" a"));
-        Assert.assertTrue("", StAXDecoderReader2.postProcessPartString("z\n   ").equals("z "));
 
         StyledString s1 = new StyledString();
         StyledString s2 = new StyledString();
@@ -73,7 +69,7 @@ public class Tests {
         StyledString str = new StyledString();
         str.tags = new StyledString.Tag[0];
         str.raw = src;
-        str = StAXDecoderReader2.postProcessString(str);
+        str = StAXDecoderReader2.postProcessString(new StringBuilder(src), new ArrayList<StyledString.Tag>());
         Assert.assertTrue("Result: '" + str.raw + "', Expected: '" + result + "'", result.equals(str.raw));
     }
 

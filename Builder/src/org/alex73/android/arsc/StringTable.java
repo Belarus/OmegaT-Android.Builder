@@ -14,6 +14,7 @@ import java.util.Set;
 
 import org.alex73.android.Assert;
 import org.alex73.android.StyledString;
+import org.alex73.android.arsc2.LightString;
 
 public class StringTable extends BaseChunked {
     private static final int UTF8_FLAG = 0x00000100;
@@ -30,7 +31,7 @@ public class StringTable extends BaseChunked {
     private int[] read_styles;
 
     private int flags;
-    private List<String> strings;
+    private List<LightString> strings;
     private List<Tag[]> styles;
 
     private boolean allowMergeDuplicates;
@@ -79,7 +80,7 @@ public class StringTable extends BaseChunked {
         allowMergeDuplicates = calcDuplicates();
 
         // construct internal structures
-        strings = new ArrayList<String>(read_stringOffsets.length);
+        strings = new ArrayList<LightString>(read_stringOffsets.length);
         for (int i = 0; i < read_stringOffsets.length; i++) {
             strings.add(getReadString(i));
         }
@@ -143,10 +144,10 @@ public class StringTable extends BaseChunked {
             offsetsStyles[i] = wr.new LaterInt();
         }
 
-        Map<String, Integer> stringOffsetMap = new HashMap<String, Integer>();
+        Map<CharSequence, Integer> stringOffsetMap = new HashMap<CharSequence, Integer>();
         stringsOffset.setValue(wr.pos());
         for (int i = 0; i < strings.size(); i++) {
-            String s = strings.get(i);
+            CharSequence s = strings.get(i);
             Integer existOffset = stringOffsetMap.get(s);
             if (existOffset != null && allowMergeDuplicates) {
                 // ужо было
@@ -157,7 +158,7 @@ public class StringTable extends BaseChunked {
                 stringOffsetMap.put(s, offsetsString[i].getValue());
                 if (isUTF8()) {
                     // UTF-8: right, two length, with zero ended
-                    byte[] sbytes = s.getBytes(UTF_8);
+                    byte[] sbytes = s.toString().getBytes(UTF_8);
                     char[] len = new char[2];
                     wr.write(constructVarint(s.length()));
                     wr.write(constructVarint(sbytes.length));
@@ -166,7 +167,7 @@ public class StringTable extends BaseChunked {
                 } else {
                     // UTF-16
                     wr.writeShort((short) s.length());
-                    wr.write(s.getBytes(UTF_16LE));
+                    wr.write(s.toString().getBytes(UTF_16LE));
                     wr.writeShort((short) 0);
                 }
             }
@@ -278,7 +279,7 @@ public class StringTable extends BaseChunked {
         return strings.size() - 1;
     }
 
-    public String getString(int index) {
+    public CharSequence getString(int index) {
         return strings.get(index);
     }
 
