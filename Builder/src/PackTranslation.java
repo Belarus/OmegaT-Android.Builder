@@ -74,32 +74,39 @@ public class PackTranslation {
             dirToPackages.put(app.getDirName(), app.getPackageName());
         }
 
+        final TranslationStoreDefaults store = new TranslationStoreDefaults();
         project.iterateByDefaultTranslations(new IProject.DefaultTranslationsIterator() {
             public void iterate(String source, TMXEntry trans) {
-                if (!source.equals(trans.translation)) {
+                if (!source.equals(trans.translation) && source.indexOf('<') < 0) {
                     countDefault++;
+                    store.addDefaultTranslation(source, trans.translation);
                     defaults.put(source, trans.translation);
                 }
             }
         });
+        store.save();
 
         File[] dirs = new File(props.getSourceRoot()).listFiles();
         for (File dir : dirs) {
             File dirOut = new File(props.getTargetRoot(), dir.getName());
 
-            Map<StyledIdString, StyledString> collected = new HashMap<StyledIdString, StyledString>();
             String dirName = dir.getName();
+            String pkg = dirToPackages.get(dirName);
+            Assert.assertNotNull("Unknown package", pkg);
+            TranslationStorePackage packageStore = new TranslationStorePackage(pkg);
+            Assert.assertNotNull("Unknown package", packageStore);
+
+            Map<StyledIdString, StyledString> collected = new HashMap<StyledIdString, StyledString>();
             File[] fs = dir.listFiles();
             Assert.assertNotNull("There is no files", fs);
             for (File f : fs) {
-                readSourceAndTrans(f, new File(dirOut, f.getName()), collected);
+                readSourceAndTrans(f, new File(dirOut, f.getName()), collected, packageStore);
             }
             Assert.assertTrue("Not translated", !collected.isEmpty());
-            String pkg = dirToPackages.get(dirName);
-            Assert.assertNotNull("Unknown package", pkg);
             Assert.assertNull("Exist package", exact.get(pkg));
             exact.put(pkg, collected);
             countTranslations += collected.size();
+            packageStore.save();
         }
 
         System.out.println("countDefault = " + countDefault);
@@ -111,8 +118,8 @@ public class PackTranslation {
         }
         System.out.println();
 
-        write();
-        write();
+        //write();
+        //write();
 
         log.close();
         System.exit(0);
@@ -149,8 +156,8 @@ public class PackTranslation {
         out.close();
     }
 
-    static void readSourceAndTrans(File inFile, File outFile, Map<StyledIdString, StyledString> collected)
-            throws Exception {
+    static void readSourceAndTrans(File inFile, File outFile, Map<StyledIdString, StyledString> collected,
+            TranslationStorePackage packageStore) throws Exception {
         StAXDecoderReader2 rdIn = new StAXDecoderReader2();
         rdIn.read(inFile);
         StAXDecoderReader2 rdOut = new StAXDecoderReader2();
@@ -160,7 +167,7 @@ public class PackTranslation {
             Map<String, StyledString> out = rdOut.getStrings();
             Assert.assertTrue("Wrong count", in.size() == out.size());
             for (Map.Entry<String, StyledString> en : in.entrySet()) {
-                collect(en.getKey(), en.getValue(), out.get(en.getKey()), collected);
+                collect(en.getKey(), en.getValue(), out.get(en.getKey()), collected, packageStore);
             }
         }
         {
@@ -172,7 +179,7 @@ public class PackTranslation {
                 List<StyledString> o = out.get(id);
                 Assert.assertTrue("Wrong length", i.size() == o.size());
                 for (int idx = 0; idx < i.size(); idx++) {
-                    collect(id, i.get(idx), o.get(idx), collected);
+                    collect(id, i.get(idx), o.get(idx), collected, packageStore);
                 }
             }
         }
@@ -185,14 +192,15 @@ public class PackTranslation {
                 Map<String, StyledString> o = out.get(id);
                 Assert.assertTrue("Wrong length", i.size() == o.size());
                 for (String pid : i.keySet()) {
-                    collect(id + "/" + pid, i.get(pid), o.get(pid), collected);
+                    collect(id + "/" + pid, i.get(pid), o.get(pid), collected, packageStore);
                 }
             }
         }
     }
 
     static void collect(String id, StyledString origin, StyledString translated,
-            Map<StyledIdString, StyledString> collected) throws Exception {
+            Map<StyledIdString, StyledString> collected, TranslationStorePackage packageStore)
+            throws Exception {
         if (origin == null && translated == null) {
             return;
         }
@@ -223,6 +231,7 @@ public class PackTranslation {
         s.tags = origin.tags;
         log.println("id: " + id);
         s.dump(log);
+        packageStore.addTranslation(s, translated);
         StyledString exist = collected.get(s);
         if (exist != null) {
             // TODO Assert.assertTrue("Changed string(id=" + id + "): '" + exist + "' and '" + translated +
