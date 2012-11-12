@@ -1,6 +1,8 @@
 #!/bin/bash
 
-g() {
+set -x
+
+g2() {
   echo "===== Retrieve branch $3 from $2 into $1 ====="
   pushd /data/android/$1 || exit
   ../repo init -u $2 -b $3
@@ -8,7 +10,7 @@ g() {
   popd
 }
 
-g2() {
+g() {
   echo "===== Unpack branch $3 from $2 into $1, then add as $4 ====="
   echo rm -rf /data/android/$1/*
   rm -rf /data/android/$1/*
@@ -16,10 +18,13 @@ g2() {
   ../repo init -u $2 -b $3 || exit 1
   ../repo sync -l
   popd
-  java -cp classes:lib/commons-io-1.4.jar UnpackCyanogenResources /data/android/$1 $4 || exit 1
+  java -cp classes:../Installer/bin/classes:lib/commons-io-1.4.jar UnpackCyanogenResources /data/android/$1 $4 || exit 1
 }
 
 rm -rf ../../Android.OmegaT/Android/source
+
+ALL_PROXY=
+all_proxy=
 
 g cyanogen git://github.com/CyanogenMod/android.git froyo-stable           cyanogen-2.2
 g cyanogen git://github.com/CyanogenMod/android.git gingerbread-release    cyanogen-2.3

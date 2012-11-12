@@ -161,7 +161,7 @@ public class Step4 extends Step {
             InputStream in = zip.getInputStream(en);
             try {
                 ChunkReader2 rsReader = new ChunkReader2(in);
-                rs = new ResourceProcessor(rsReader);
+                rs = new ResourceProcessor(rsReader, null);
             } finally {
                 in.close();
             }

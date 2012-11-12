@@ -28,6 +28,10 @@ public class ChunkReader2 {
         return left;
     }
 
+    public boolean isEOF() {
+        return left <= 0;
+    }
+
     public ChunkHeader2 prereadHeader() {
         try {
             in.mark(8);

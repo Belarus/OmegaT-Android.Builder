@@ -1,7 +1,5 @@
 package org.alex73.android.arsc2.reader;
 
-import java.util.Arrays;
-
 import org.alex73.android.Assert;
 import org.alex73.android.arsc2.writer.ChunkWriter2;
 

@@ -24,6 +24,7 @@ public class LightString implements CharSequence, Comparable<LightString> {
     public CharSequence subSequence(int start, int end) {
         return new LightString(base, start, end - start);
     }
+
     public LightString substring(int start, int end) {
         return new LightString(base, start, end - start);
     }
@@ -79,6 +80,14 @@ public class LightString implements CharSequence, Comparable<LightString> {
             k++;
         }
         return len1 - len2;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof LightString)) {
+            return false;
+        }
+        return compareTo((LightString) o) == 0;
     }
 
     public String toString() {

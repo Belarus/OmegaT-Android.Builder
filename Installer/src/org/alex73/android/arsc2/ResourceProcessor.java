@@ -3,6 +3,7 @@ package org.alex73.android.arsc2;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -41,7 +42,7 @@ public class ResourceProcessor {
     /**
      * Read.
      */
-    public ResourceProcessor(ChunkReader2 rd) {
+    public ResourceProcessor(ChunkReader2 rd, Callback callback) {
         Assert.assertTrue("Main chunk should be TABLE", rd.header.chunkType == ChunkHeader2.TYPE_TABLE
                 && rd.header.chunkType2 == ChunkHeader2.TYPE2_TABLE);
 
@@ -50,6 +51,9 @@ public class ResourceProcessor {
         globalStringTable = new StringTable2();
         ChunkMapper stringChunk = rd.readChunk();
         try {
+            if (callback!=null) {
+                callback.onGlobalStringTable(stringChunk);
+            }
             globalStringTable.read(stringChunk);
         } finally {
             stringChunk.close();
@@ -258,21 +262,7 @@ public class ResourceProcessor {
         // translate
         StringTable2.StringInstance source = globalStringTable.getStrings().get(origStringIndex);
 
-        StyledString orig = new StyledString();
-        orig.raw = source.getRawString();
-        StringTable2.StringInstance.Tag[] tags = source.getTags();
-        if (tags != null) {
-            orig.tags = new StyledString.Tag[tags.length];
-            for (int i = 0; i < orig.tags.length; i++) {
-                orig.tags[i] = new StyledString.Tag();
-                orig.tags[i].start = tags[i].start();
-                orig.tags[i].end = tags[i].end();
-                orig.tags[i].tagName = tags[i].tagName();
-            }
-            orig.sortTags();
-        } else {
-            orig.tags = StyledString.NO_TAGS;
-        }
+        StyledString orig = source.getStyledString();
 
         StyledString trans = tr.getTranslation(packageName, entryName, orig);
         if (trans != null) {
@@ -343,5 +333,9 @@ public class ResourceProcessor {
                 }
             }
         }
+    }
+    
+    public interface Callback {
+        void onGlobalStringTable(ChunkMapper stringChunk);
     }
 }

@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -12,8 +11,8 @@ import java.util.zip.ZipFile;
 import org.alex73.android.Assert;
 import org.alex73.android.StAXDecoderReader2;
 import org.alex73.android.StyledString;
+import org.alex73.android.arsc2.LightString;
 import org.alex73.android.arsc2.ResourceProcessor;
-import org.alex73.android.arsc2.Segmenter;
 import org.alex73.android.arsc2.StringTable2;
 import org.alex73.android.arsc2.Translation;
 import org.alex73.android.arsc2.reader.ChunkHeader2;
@@ -27,13 +26,8 @@ public class Tests {
         // testVar();
         testStAXDecoderReader();
 
-        StringTable2.OPTIMIZE = true;
+        StringTable2.DESKTOP_MODE = true;
         testTranslations();
-
-        String orig = "Test 1 asdjghjkasdhgjk hasd gjk.  Ajhkjashdjkgh jkhjkhjk.\n\n\nZzzzzz.";
-        List<String> s = Segmenter.segment(orig);
-        String dest = Segmenter.glue(s.toArray(new String[s.size()]));
-        Assert.assertTrue("", orig.equals(dest));
     }
 
     public static void testStAXDecoderReader() {
@@ -49,16 +43,16 @@ public class Tests {
 
         StyledString s1 = new StyledString();
         StyledString s2 = new StyledString();
-        s1.raw = " zz   tt ";
+        s1.raw = new LightString(" zz   tt ");
         s1.tags = new StyledString.Tag[1];
         s1.tags[0] = new StyledString.Tag();
-        s1.tags[0].tagName = "b";
+        s1.tags[0].tagName = new LightString("b");
         s1.tags[0].start = 6;
         s1.tags[0].end = 6;
-        s2.raw = "zz tt";
+        s2.raw = new LightString("zz tt");
         s2.tags = new StyledString.Tag[1];
         s2.tags[0] = new StyledString.Tag();
-        s2.tags[0].tagName = "b";
+        s2.tags[0].tagName = new LightString("b");
         s2.tags[0].start = 3;
         s2.tags[0].end = 3;
         s1.removeSpaces();
@@ -68,7 +62,7 @@ public class Tests {
     private static void testStAXDecoderReader(String src, String result) {
         StyledString str = new StyledString();
         str.tags = new StyledString.Tag[0];
-        str.raw = src;
+        str.raw = new LightString(src);
         str = StAXDecoderReader2.postProcessString(new StringBuilder(src), new ArrayList<StyledString.Tag>());
         Assert.assertTrue("Result: '" + str.raw + "', Expected: '" + result + "'", result.equals(str.raw));
     }
@@ -131,19 +125,19 @@ public class Tests {
 
     public static byte[] recreateFull(byte[] data) {
         ChunkReader2 rsReader = new ChunkReader2(new ByteArrayInputStream(data));
-        ResourceProcessor rs = new ResourceProcessor(rsReader);
+        ResourceProcessor rs = new ResourceProcessor(rsReader, null);
         return rs.save();
     }
 
     public static byte[] recreatePackage(byte[] data, int packageIndex) {
         ChunkReader2 rsReader = new ChunkReader2(new ByteArrayInputStream(data));
-        ResourceProcessor rs = new ResourceProcessor(rsReader);
+        ResourceProcessor rs = new ResourceProcessor(rsReader, null);
         return rs.packages[packageIndex].write();
     }
 
     public static byte[] recreateStrings(byte[] data) {
         ChunkReader2 rsReader = new ChunkReader2(new ByteArrayInputStream(data));
-        ResourceProcessor rs = new ResourceProcessor(rsReader);
+        ResourceProcessor rs = new ResourceProcessor(rsReader, null);
         return rs.globalStringTable.write();
     }
 

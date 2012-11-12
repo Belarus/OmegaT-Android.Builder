@@ -7,7 +7,7 @@ import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.alex73.android.arsc.ManifestInfo;
+import org.alex73.android.arsc2.ManifestInfo;
 
 public class FileInfo {
     final static String MANIFEST_FILE = "AndroidManifest.xml";

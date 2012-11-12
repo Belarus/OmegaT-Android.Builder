@@ -9,7 +9,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.alex73.android.Assert;
 import org.alex73.android.StyledString;
@@ -18,7 +22,6 @@ import org.alex73.android.arsc2.reader.ChunkMapper;
 import org.alex73.android.arsc2.writer.ChunkWriter2;
 
 public class StringTable2 {
-    public static boolean OPTIMIZE = false;
     private static final int UTF8_FLAG = 0x00000100;
 
     private static final String UTF_16LE = "UTF-16LE";
@@ -30,6 +33,10 @@ public class StringTable2 {
     private int flags;
 
     private List<StringInstance> strings;
+
+    public static boolean DESKTOP_MODE = false;
+    private boolean mergeDuplicates = false;
+    private Map<ByteArray, Integer> duplicatesIndex;
 
     public class StringInstance {
         public byte[] text;
@@ -63,6 +70,25 @@ public class StringTable2 {
             }
 
             return st;
+        }
+
+        public StyledString getStyledString() {
+            StyledString orig = new StyledString();
+            orig.raw = new LightString(getRawString());
+            Tag[] tags = getTags();
+            if (tags != null) {
+                orig.tags = new StyledString.Tag[tags.length];
+                for (int i = 0; i < orig.tags.length; i++) {
+                    orig.tags[i] = new StyledString.Tag();
+                    orig.tags[i].start = tags[i].start();
+                    orig.tags[i].end = tags[i].end();
+                    orig.tags[i].tagName = new LightString(tags[i].tagName());
+                }
+                orig.sortTags();
+            } else {
+                orig.tags = StyledString.NO_TAGS;
+            }
+            return orig;
         }
 
         public class Tag {
@@ -132,6 +158,23 @@ public class StringTable2 {
                 strings.get(i).tags = getStyleInfo(read_styleOffsets[i], read_styles);
             }
         }
+
+        if (DESKTOP_MODE) {
+            mergeDuplicates = findDuplicates(read_stringOffsets);
+            duplicatesIndex = new HashMap<StringTable2.ByteArray, Integer>();
+        }
+    }
+
+    private boolean findDuplicates(int[] read_stringOffsets) {
+        Set<Integer> offsets = new HashSet<Integer>();
+        for (int i = 0; i < read_stringOffsets.length; i++) {
+            int offset = read_stringOffsets[i];
+            if (offsets.contains(offset)) {
+                return true;
+            }
+            offsets.add(offset);
+        }
+        return false;
     }
 
     public int readCount(ChunkMapper rd) {
@@ -150,28 +193,36 @@ public class StringTable2 {
     }
 
     public int getStringContentIndex(byte[] data) {
-        for (int i = 0; i < strings.size(); i++) {
-            if (Arrays.equals(data, strings.get(i).text)) {
-                return i;
-            }
-        }
-        Assert.fail("Wrong string optimization");
-        return -1;
+        Integer index = duplicatesIndex.get(new ByteArray(data));
+        return index == null ? -1 : index;
+    }
+
+    public void setStringContentIndex(byte[] data, int index) {
+        duplicatesIndex.put(new ByteArray(data), index);
+    }
+
+    public void clearStringContentIndex() {
+        duplicatesIndex.clear();
     }
 
     public byte[] write() {
         ChunkWriter2 wr = new ChunkWriter2(ChunkHeader2.TYPE_STRINGS, ChunkHeader2.TYPE2_STRINGS);
 
+        if (mergeDuplicates) {
+            clearStringContentIndex();
+        }
         // calc strings offsets
         int[] write_stringOffsets = new int[strings.size()];
         int off = 0;
         for (int i = 0; i < strings.size(); i++) {
-            if (OPTIMIZE) {
+            if (mergeDuplicates) {
                 int wrIndex = getStringContentIndex(strings.get(i).text);
-                if (wrIndex < i) {
+                if (wrIndex >= 0) {
                     // duplicate
                     write_stringOffsets[i] = write_stringOffsets[wrIndex];
                     continue;
+                } else {
+                    setStringContentIndex(strings.get(i).text, i);
                 }
             }
             write_stringOffsets[i] = off;
@@ -214,14 +265,19 @@ public class StringTable2 {
         wr.writeIntArray(write_stringOffsets);
         wr.writeIntArray(write_styleOffsets);
 
+        if (mergeDuplicates) {
+            clearStringContentIndex();
+        }
         // write strings
         laterStringsOffset.setValue(wr.pos());
         for (int i = 0; i < write_stringOffsets.length; i++) {
-            if (OPTIMIZE) {
+            if (mergeDuplicates) {
                 int wrIndex = getStringContentIndex(strings.get(i).text);
-                if (wrIndex < i) {
+                if (wrIndex >= 0) {
                     // duplicate
                     continue;
+                } else {
+                    setStringContentIndex(strings.get(i).text, i);
                 }
             }
             wr.write(strings.get(i).text);
@@ -282,19 +338,19 @@ public class StringTable2 {
         return result;
     }
 
-    private byte[] putStringBytes(String s) {
+    private byte[] putStringBytes(LightString s) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
             if (isUTF8()) {
                 // UTF-8: right, two length, with zero ended
-                byte[] sbytes = s.getBytes(UTF_8);
+                byte[] sbytes = s.toString().getBytes(UTF_8);
                 out.write(constructVarint(s.length()));
                 out.write(constructVarint(sbytes.length));
                 out.write(sbytes);
             } else {
                 // UTF-16
                 writeShort((short) s.length(), out);
-                out.write(s.getBytes(UTF_16LE));
+                out.write(s.toString().getBytes(UTF_16LE));
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -369,10 +425,33 @@ public class StringTable2 {
 
     private String decodeString(byte[] text, int offset, int length) {
         try {
-            return (isUTF8() ? UTF8_DECODER : UTF16LE_DECODER).decode(ByteBuffer.wrap(text, offset, length))
-                    .toString();
+            return (isUTF8() ? UTF8_DECODER : UTF16LE_DECODER).decode(ByteBuffer.wrap(text, offset, length)).toString();
         } catch (CharacterCodingException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    static class ByteArray {
+        byte[] data;
+        int hash;
+
+        public ByteArray(byte[] data) {
+            this.data = data;
+        }
+
+        public boolean equals(Object o) {
+            return Arrays.equals(data, ((ByteArray) o).data);
+        }
+
+        public int hashCode() {
+            int h = hash;
+            if (h == 0 && data.length > 0) {
+                for (int i = 0; i < data.length; i++) {
+                    h = 31 * h + data[i];
+                }
+                hash = h;
+            }
+            return h;
         }
     }
 }

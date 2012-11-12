@@ -29,23 +29,6 @@ public class StyledString {
         }
     }
 
-    public boolean hasInvalidChars() {
-        for (int i = 0; i < raw.length(); i++) {
-            char c = raw.charAt(i);
-            if (c < 0x20) {
-                if (c != 0x09 && c != 0x0A && c != 0x0D) {
-                    return true;
-                }
-            } else if (c >= 0x20 && c <= 0xD7FF) {
-            } else if (c >= 0xE000 && c <= 0xFFFD) {
-            } else if (c >= 0x10000 && c <= 0x10FFFF) {
-            } else {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public boolean hasTags() {
         return tags.length > 0;
     }

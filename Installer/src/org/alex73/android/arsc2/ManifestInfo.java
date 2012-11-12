@@ -1,21 +1,29 @@
-package org.alex73.android.arsc;
+package org.alex73.android.arsc2;
+
+import java.io.ByteArrayInputStream;
+
+import org.alex73.android.Assert;
+import org.alex73.android.arsc2.reader.ChunkHeader2;
+import org.alex73.android.arsc2.reader.ChunkMapper;
+import org.alex73.android.arsc2.reader.ChunkReader2;
 
 public class ManifestInfo {
     private String packageName, versionName;
 
     public ManifestInfo(byte[] data) {
-        BytesReader rd = new BytesReader(data, 0, data.length);
-        ChunkHeader2 headerXML = new ChunkHeader2(rd);
-        Checks.expect(ChunkHeader2.TYPE_XML, headerXML.chunkType, "Invalid XML file");
+        ChunkReader2 rd = new ChunkReader2(new ByteArrayInputStream(data));
 
-        ChunkHeader2 headerStrings = new ChunkHeader2(rd);
-        StringTable2 stringTable = new StringTable2(headerStrings, rd);
+        Assert.assertTrue("XML chunk", rd.header.chunkType == ChunkHeader2.TYPE_DATA
+                && rd.header.chunkType2 == ChunkHeader2.TYPE2_XML);
+
+        StringTable2 stringTable = new StringTable2();
+        stringTable.read(rd.readChunk());
 
         while (!rd.isEOF()) {
-            ChunkHeader2 nextChunkHeader = new ChunkHeader2(rd);
-            switch (nextChunkHeader.chunkType) {
-            case ChunkHeader2.TYPE_XML_START_TAG:
-                ChunkXmlStartTag startTag = new ChunkXmlStartTag(nextChunkHeader, rd);
+            ChunkMapper m = rd.readChunk();
+            switch (m.header.chunkType) {
+            case ChunkHeader2.TYPE_XML_EVENT_START_TAG:
+                ChunkXmlStartTag startTag = new ChunkXmlStartTag(m);
                 if ("manifest".equals(startTag.getTagName(stringTable))) {
                     for (int i = 0; i < startTag.getAttributesCount(); i++) {
                         if ("versionName".equals(startTag.getAttributeName(i, stringTable))) {
@@ -26,9 +34,6 @@ public class ManifestInfo {
                     }
                     return;
                 }
-                break;
-            default:
-                rd.skip(nextChunkHeader.chunkSize - 8);
                 break;
             }
         }

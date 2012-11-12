@@ -1,9 +1,12 @@
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -15,11 +18,12 @@ import org.alex73.android.IEncoder;
 import org.alex73.android.StAXDecoder;
 import org.alex73.android.StAXEncoder;
 import org.alex73.android.StyledString;
-import org.alex73.android.arsc.ChunkReader;
-import org.alex73.android.arsc.ChunkWriter;
-import org.alex73.android.arsc.ManifestInfo;
-import org.alex73.android.arsc.Resources;
-import org.alex73.android.arsc.StringTable;
+import org.alex73.android.arsc2.ManifestInfo;
+import org.alex73.android.arsc2.ResourceProcessor;
+import org.alex73.android.arsc2.StringTable2;
+import org.alex73.android.arsc2.reader.ChunkMapper;
+import org.alex73.android.arsc2.reader.ChunkReader2;
+import org.alex73.android.common.FileInfo;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -34,12 +38,14 @@ public class UnpackBinaryResources {
     static String projectPath = "../../Android.OmegaT/Android/";
     static File[] zips;
 
-    static List<BuildAll.FileInfo> fileNames = new ArrayList<BuildAll.FileInfo>();
+    static List<FileInfo> fileNames = new ArrayList<FileInfo>();
 
     static Translation translationInfo;
 
     public static void main(String[] args) throws Exception {
-        readTranslationInfo();
+        StringTable2.DESKTOP_MODE = true;
+
+        translationInfo = readTranslationInfo();
 
         // process binary zips
         zips = new File(args[0]).listFiles(new FileFilter() {
@@ -60,13 +66,13 @@ public class UnpackBinaryResources {
                 }
                 if (ze.getName().endsWith(".apk")) {
                     byte[] apk = IOUtils.toByteArray(in);
-                    byte[] manifest = BuildAll.extractFile(apk, "AndroidManifest.xml");
+                    byte[] manifest = extractFile(apk, "AndroidManifest.xml");
                     ManifestInfo mi = new ManifestInfo(manifest);
                     System.out.println("  " + ze.getName() + "  p:" + mi.getPackageName() + " v:" + mi.getVersion());
                     Context.setByManifest(mi);
                     String dirName = getDirName(mi.getPackageName(), mi.getVersion());
                     if (dirName != null) {
-                        byte[] arsc = BuildAll.extractFile(apk, "resources.arsc");
+                        byte[] arsc = extractFile(apk, "resources.arsc");
                         if (arsc != null) {
                             processARSC(arsc, dirName, createSuffix(mi));
                         }
@@ -77,42 +83,53 @@ public class UnpackBinaryResources {
         }
     }
 
+    static byte[] globalStringTableBytes;
+
     protected static void processARSC(byte[] arsc, String dirName, String suffixVersion) throws Exception {
-        ChunkReader rsReader = new ChunkReader(arsc);
-        Resources rs = new Resources(rsReader);
+        ChunkReader2 rsReader = new ChunkReader2(new ByteArrayInputStream(arsc));
+        ResourceProcessor rs = new ResourceProcessor(rsReader, new ResourceProcessor.Callback() {
+            public void onGlobalStringTable(ChunkMapper stringChunk) {
+                globalStringTableBytes = stringChunk.getBytes();
+            }
+        });
 
         File out = new File(projectPath + "/source/" + dirName);
         out.mkdirs();
 
-        checkAllStrings(rs.getStringTable());
+        checkAllStrings(rs.globalStringTable);
 
         // checks
-        ChunkWriter wr = rs.getStringTable().write();
-        byte[] readed = rs.getStringTable().getOriginalBytes();
-        byte[] written = wr.getBytes();
+        byte[] written = rs.globalStringTable.write();
+        byte[] readed = globalStringTableBytes;
 
         if (!Arrays.equals(readed, written)) {
             FileUtils.writeByteArrayToFile(new File("/tmp/st-orig"), readed);
             FileUtils.writeByteArrayToFile(new File("/tmp/st-new"), written);
-            throw new Exception("StringTables are differ: /tmp/st-orig, /tmp/st-new");
+            throw new Exception(
+                    "StringTables are differ: /tmp/st-orig, /tmp/st-new\nhd -v < /tmp/st-orig > /tmp/st-orig.txt\nhd -v < /tmp/st-new > /tmp/st-new.txt");
         }
 
         System.out.println("    Store resources in " + out.getAbsolutePath() + " version=" + suffixVersion);
         new StAXEncoder().dump(rs, out, suffixVersion);
 
         // зыходныя рэсурсы захаваныя наноў - для параўняньня
-        ChunkWriter rsWriterOriginal = rs.write();
+        byte[] rsWriterOriginal = rs.save();
 
-        Assert.assertArrayEquals(arsc, rsWriterOriginal.getBytes());
+        if (!Arrays.equals(arsc, rsWriterOriginal)) {
+            FileUtils.writeByteArrayToFile(new File("/tmp/st-orig"), arsc);
+            FileUtils.writeByteArrayToFile(new File("/tmp/st-new"), rsWriterOriginal);
+            throw new Exception(
+                    "Resources are differ: /tmp/st-orig, /tmp/st-new\nhd -v < /tmp/st-orig > /tmp/st-orig.txt\nhd -v < /tmp/st-new > /tmp/st-new.txt");
+        }
     }
 
-    protected static void checkAllStrings(final StringTable table) throws Exception {
+    protected static void checkAllStrings(final StringTable2 table) throws Exception {
         IEncoder encoder = new StAXEncoder();
         IDecoder decoder = new StAXDecoder();
 
         for (int i = 0; i < table.getStringCount(); i++) {
-            StyledString ss1 = table.getStyledString(i);
-            if (ss1.hasInvalidChars()) {
+            StyledString ss1 = table.getStrings().get(i).getStyledString();
+            if (hasInvalidChars(ss1.raw)) {
                 continue;
             }
 
@@ -130,10 +147,24 @@ public class UnpackBinaryResources {
         return mi.getVersion();
     }
 
-    static void readTranslationInfo() throws Exception {
+    static Translation readTranslationInfo() throws Exception {
         JAXBContext ctx = JAXBContext.newInstance(Translation.class);
-        translationInfo = (Translation) ctx.createUnmarshaller()
-                .unmarshal(new File(projectPath + "../translation.xml"));
+        Translation result = (Translation) ctx.createUnmarshaller().unmarshal(
+                new File(projectPath + "../translation.xml"));
+
+        Set<String> uniqueApps = new HashSet<String>();
+        Set<String> uniquePackages = new HashSet<String>();
+        for (App app : result.getApp()) {
+            if (uniqueApps.contains(app.getDirName())) {
+                throw new RuntimeException("Non-unique app in translation.xml: " + app.getDirName());
+            }
+            if (uniquePackages.contains(app.getPackageName())) {
+                throw new RuntimeException("Non-unique package in translation.xml: " + app.getPackageName());
+            }
+            uniqueApps.add(app.getDirName());
+            uniquePackages.add(app.getPackageName());
+        }
+        return result;
     }
 
     static String getDirName(String packageName, String versionName) {
@@ -148,5 +179,33 @@ public class UnpackBinaryResources {
             dirName = app.getDirName();
         }
         return dirName;
+    }
+
+    protected static byte[] extractFile(byte[] zip, String name) throws Exception {
+        ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zip));
+        ZipEntry ze;
+        while ((ze = in.getNextEntry()) != null) {
+            if (name.equals(ze.getName())) {
+                return IOUtils.toByteArray(in);
+            }
+        }
+        return null;
+    }
+
+    public static boolean hasInvalidChars(CharSequence str) {
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c < 0x20) {
+                if (c != 0x09 && c != 0x0A && c != 0x0D) {
+                    return true;
+                }
+            } else if (c >= 0x20 && c <= 0xD7FF) {
+            } else if (c >= 0xE000 && c <= 0xFFFD) {
+            } else if (c >= 0x10000 && c <= 0x10FFFF) {
+            } else {
+                return true;
+            }
+        }
+        return false;
     }
 }

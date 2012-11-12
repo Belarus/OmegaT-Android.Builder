@@ -9,10 +9,11 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamWriter;
 
 import org.alex73.android.StyledString.Tag;
-import org.alex73.android.arsc.Config;
-import org.alex73.android.arsc.Entry;
-import org.alex73.android.arsc.Resources;
+import org.alex73.android.arsc2.Config2;
+import org.alex73.android.arsc2.Entry2;
 import org.alex73.android.arsc2.LightString;
+import org.alex73.android.arsc2.Package2;
+import org.alex73.android.arsc2.ResourceProcessor;
 import org.apache.commons.io.FileUtils;
 
 import android.schema.ResXmlStringArray;
@@ -27,10 +28,10 @@ public class StAXEncoder implements IEncoder {
         factory = XMLOutputFactory.newFactory();
     }
 
-    public void dump(Resources rs, File outDir, String versionSuffix) throws Exception {
-        for (org.alex73.android.arsc.Package pkg : rs.getPackages()) {
+    public void dump(ResourceProcessor rs, File outDir, String versionSuffix) throws Exception {
+        for (Package2 pkg : rs.packages) {
             String suffix = "";
-            if (rs.getPackages().length > 1 && !"android".equals(pkg.getName())) {
+            if (rs.packages.length > 1 && !"android".equals(pkg.getName())) {
                 suffix = "-" + pkg.getName();
             } else {
                 suffix = "";
@@ -52,7 +53,7 @@ public class StAXEncoder implements IEncoder {
         }
     }
 
-    protected String dumpStrings(Resources rs, org.alex73.android.arsc.Package pkg, File outDir, String suffix)
+    protected String dumpStrings(ResourceProcessor rs, Package2 pkg, File outDir, String suffix)
             throws Exception {
         StringWriter out = new StringWriter(100000);
         XMLStreamWriter wr = factory.createXMLStreamWriter(out);
@@ -63,14 +64,16 @@ public class StAXEncoder implements IEncoder {
         wr.writeStartElement("resources");
         wr.writeCharacters("\n");
 
-        for (Config c : pkg.getAllConfigs()) {
+        for (Config2 c : pkg.getAllConfigs()) {
             if ("string".equals(c.getParentType().getName())) {
                 if (c.getFlags().isEmpty()) {
                     // base translation
-                    for (Entry e : c.getEntries()) {
-                        if (e instanceof Entry.SimpleEntry) {
-                            StyledString str = ((Entry.SimpleEntry) e).styledStringValue;
-                            if (str != null && !str.hasInvalidChars()) {
+                    for (int i=0;i<c.getEntriesCount();i++) {
+                        Entry2 e = c.getEntry(i);
+                        if (e!=null && !e.isComplex()) {
+                            int idx = e.getSimpleStringIndex();
+                            if (idx >= 0) {
+                                StyledString str = rs.globalStringTable.getStrings().get(idx).getStyledString();
                                 hasData = true;
                                 wr.writeCharacters("    ");
                                 wr.writeStartElement("string");
@@ -91,7 +94,7 @@ public class StAXEncoder implements IEncoder {
         return hasData ? out.toString() : null;
     }
 
-    protected String dumpArrays(Resources rs, org.alex73.android.arsc.Package pkg, File outDir, String suffix)
+    protected String dumpArrays(ResourceProcessor rs, Package2 pkg, File outDir, String suffix)
             throws Exception {
         StringWriter out = new StringWriter(100000);
         XMLStreamWriter wr = factory.createXMLStreamWriter(out);
@@ -102,14 +105,14 @@ public class StAXEncoder implements IEncoder {
         wr.writeStartElement("resources");
         wr.writeCharacters("\n");
 
-        for (Config c : pkg.getAllConfigs()) {
+        for (Config2 c : pkg.getAllConfigs()) {
             if ("array".equals(c.getParentType().getName())) {
                 if (c.getFlags().isEmpty()) {
                     // base translation
-                    for (Entry e : c.getEntries()) {
-                        if (e instanceof Entry.ComplexEntry) {
-                            Entry.ComplexEntry ec = (Entry.ComplexEntry) e;
-                            if (ec.values.length > 0 && isStringArray(ec)) {
+                    for (int i=0;i<c.getEntriesCount();i++) {
+                        Entry2 e = c.getEntry(i);
+                        if (e!=null && e.isComplex()) {
+                            if (e.getKeyValues().length > 0 && isStringArray(e.getKeyValues())) {
                                 hasData = true;
                                 wr.writeCharacters("    ");
                                 wr.writeStartElement("string-array");
@@ -117,15 +120,13 @@ public class StAXEncoder implements IEncoder {
                                 wr.writeCharacters("\n");
                                 ResXmlStringArray sa = new ResXmlStringArray();
                                 sa.setName(e.getName());
-                                for (Entry.KeyValue kv : ec.values) {
-                                    StyledString str = rs.getStringTable().getStyledString(kv.vData);
-                                    if (!str.hasInvalidChars()) {
-                                        wr.writeCharacters("        ");
-                                        wr.writeStartElement("item");
-                                        write(wr, str);
-                                        wr.writeEndElement();
-                                        wr.writeCharacters("\n");
-                                    }
+                                for (Entry2.KeyValue kv : e.getKeyValues()) {
+                                    StyledString str = rs.globalStringTable.getStrings().get(kv.complexData).getStyledString();
+                                    wr.writeCharacters("        ");
+                                    wr.writeStartElement("item");
+                                    write(wr, str);
+                                    wr.writeEndElement();
+                                    wr.writeCharacters("\n");
                                 }
                                 wr.writeCharacters("    ");
                                 wr.writeEndElement();
@@ -143,7 +144,7 @@ public class StAXEncoder implements IEncoder {
         return hasData ? out.toString() : null;
     }
 
-    protected String dumpPlurals(Resources rs, org.alex73.android.arsc.Package pkg, File outDir, String suffix)
+    protected String dumpPlurals(ResourceProcessor rs, Package2 pkg, File outDir, String suffix)
             throws Exception {
         StringWriter out = new StringWriter(100000);
         XMLStreamWriter wr = factory.createXMLStreamWriter(out);
@@ -154,14 +155,14 @@ public class StAXEncoder implements IEncoder {
         wr.writeStartElement("resources");
         wr.writeCharacters("\n");
 
-        for (Config c : pkg.getAllConfigs()) {
+        for (Config2 c : pkg.getAllConfigs()) {
             if ("plurals".equals(c.getParentType().getName())) {
                 if (c.getFlags().isEmpty()) {
                     // base translation
-                    for (Entry e : c.getEntries()) {
-                        if (e instanceof Entry.ComplexEntry) {
-                            Entry.ComplexEntry ec = (Entry.ComplexEntry) e;
-                            Assert.assertTrue("", isPluralsArray(ec));
+                    for (int i=0;i<c.getEntriesCount();i++) {
+                        Entry2 e = c.getEntry(i);
+                        if (e!=null && e.isComplex()) {
+                            Assert.assertTrue("", isPluralsArray(e.getKeyValues()));
                             hasData = true;
                             wr.writeCharacters("    ");
                             wr.writeStartElement("plurals");
@@ -169,17 +170,14 @@ public class StAXEncoder implements IEncoder {
                             wr.writeCharacters("\n");
                             ResXmlStringArray sa = new ResXmlStringArray();
                             sa.setName(e.getName());
-                            for (Entry.KeyValue kv : ec.values) {
-                                StyledString str = rs.getStringTable().getStyledString(kv.vData);
-                                if (!str.hasInvalidChars()) {
-                                    wr.writeCharacters("        ");
-                                    wr.writeStartElement("item");
-                                    wr.writeAttribute("quantity", ARSC.QUANTITY_MAP[kv.key
-                                            - ARSC.BAG_KEY_PLURALS_START]);
-                                    write(wr, str);
-                                    wr.writeEndElement();
-                                    wr.writeCharacters("\n");
-                                }
+                            for (Entry2.KeyValue kv : e.getKeyValues()) {
+                                StyledString str = rs.globalStringTable.getStrings().get(kv.complexData).getStyledString();
+                                wr.writeCharacters("        ");
+                                wr.writeStartElement("item");
+                                wr.writeAttribute("quantity", ARSC.QUANTITY_MAP[kv.key - ARSC.BAG_KEY_PLURALS_START]);
+                                write(wr, str);
+                                wr.writeEndElement();
+                                wr.writeCharacters("\n");
                             }
                             wr.writeCharacters("    ");
                             wr.writeEndElement();
@@ -264,12 +262,12 @@ public class StAXEncoder implements IEncoder {
         wr.writeCharacters(writeTextBuffer.toString());
     }
 
-    protected static boolean isStringArray(Entry.ComplexEntry kvs) {
-        Assert.assertEquals("", ResArrayValue.BAG_KEY_ARRAY_START, kvs.values[0].key);
+    protected static boolean isStringArray(Entry2.KeyValue[] kvs) {
+        Assert.assertEquals("", ResArrayValue.BAG_KEY_ARRAY_START, kvs[0].key);
         boolean hasStrings = false;
         boolean hasOther = false;
-        for (Entry.KeyValue kv : kvs.values) {
-            if (kv.vType == TypedValue.TYPE_STRING) {
+        for (Entry2.KeyValue kv : kvs) {
+            if (kv.complexType == TypedValue.TYPE_STRING) {
                 hasStrings = true;
             } else {
                 hasOther = true;
@@ -278,9 +276,9 @@ public class StAXEncoder implements IEncoder {
         return hasStrings && !hasOther;
     }
 
-    protected static boolean isPluralsArray(Entry.ComplexEntry kvs) {
-        Assert.assertTrue("", kvs.values.length <= ARSC.QUANTITY_MAP.length);
-        for (Entry.KeyValue kv : kvs.values) {
+    protected static boolean isPluralsArray(Entry2.KeyValue[] kvs) {
+        Assert.assertTrue("", kvs.length <= ARSC.QUANTITY_MAP.length);
+        for (Entry2.KeyValue kv : kvs) {
             Assert.assertTrue("", kv.key >= ResPluralsValue.BAG_KEY_PLURALS_START
                     && kv.key <= ResPluralsValue.BAG_KEY_PLURALS_END);
         }
