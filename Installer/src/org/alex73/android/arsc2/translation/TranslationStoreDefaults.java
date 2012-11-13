@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.zip.GZIPInputStream;
 
-import org.alex73.android.arsc2.LightString;
 import org.alex73.android.bel.R;
 
 import android.content.res.Resources;
@@ -41,12 +40,12 @@ public class TranslationStoreDefaults {
         }
     }
 
-    public LightString getTranslation(LightString source) {
+    public String getTranslation(String source) {
         filterHashes(source);
         for (int i = hashIndexFirst; i <= hashIndexLast; i++) {
             String key = createKeyString(i);
-            if (key.equals(source.toString())) {
-                return new LightString(createValueString(i));
+            if (key.equals(source)) {
+                return createValueString(i);
             }
         }
         return null;
@@ -74,7 +73,7 @@ public class TranslationStoreDefaults {
 
     int hashIndexFirst, hashIndexLast;
 
-    private void filterHashes(LightString source) {
+    private void filterHashes(String source) {
         int h = source.hashCode();
 
         int minIndex = 0;

@@ -14,8 +14,6 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
 
-import org.alex73.android.arsc2.LightString;
-
 public class StAXDecoderReader2 {
     protected XMLInputFactory factory;
 
@@ -121,11 +119,11 @@ public class StAXDecoderReader2 {
             case XMLEvent.START_ELEMENT:
                 StyledString.Tag tagStart = new StyledString.Tag();
                 tagStart.start = currentString.length();
-                tagStart.tagName = new LightString(rd.getLocalName());
+                tagStart.tagName = rd.getLocalName();
                 for (int i = 0;; i++) {
                     String aName = rd.getAttributeLocalName(i);
                     if (aName != null) {
-                        tagStart.tagName = new LightString(tagStart.tagName+ ";" + aName + "=" + rd.getAttributeValue(i));
+                        tagStart.tagName = tagStart.tagName+ ";" + aName + "=" + rd.getAttributeValue(i);
                     } else {
                         break;
                     }
@@ -209,7 +207,7 @@ public class StAXDecoderReader2 {
         }
 
         StyledString result = new StyledString();
-        result.raw = new LightString(out.toString());
+        result.raw = out.toString();
         result.tags = tags.toArray(new StyledString.Tag[tags.size()]);
         result.sortTags();
         return result;

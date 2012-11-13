@@ -74,7 +74,7 @@ public class StringTable2 {
 
         public StyledString getStyledString() {
             StyledString orig = new StyledString();
-            orig.raw = new LightString(getRawString());
+            orig.raw = getRawString();
             Tag[] tags = getTags();
             if (tags != null) {
                 orig.tags = new StyledString.Tag[tags.length];
@@ -82,7 +82,7 @@ public class StringTable2 {
                     orig.tags[i] = new StyledString.Tag();
                     orig.tags[i].start = tags[i].start();
                     orig.tags[i].end = tags[i].end();
-                    orig.tags[i].tagName = new LightString(tags[i].tagName());
+                    orig.tags[i].tagName = tags[i].tagName();
                 }
                 orig.sortTags();
             } else {
@@ -338,19 +338,19 @@ public class StringTable2 {
         return result;
     }
 
-    private byte[] putStringBytes(LightString s) {
+    private byte[] putStringBytes(String s) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
             if (isUTF8()) {
                 // UTF-8: right, two length, with zero ended
-                byte[] sbytes = s.toString().getBytes(UTF_8);
+                byte[] sbytes = s.getBytes(UTF_8);
                 out.write(constructVarint(s.length()));
                 out.write(constructVarint(sbytes.length));
                 out.write(sbytes);
             } else {
                 // UTF-16
                 writeShort((short) s.length(), out);
-                out.write(s.toString().getBytes(UTF_16LE));
+                out.write(s.getBytes(UTF_16LE));
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex);

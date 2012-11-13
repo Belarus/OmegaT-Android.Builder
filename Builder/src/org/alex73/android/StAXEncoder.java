@@ -11,7 +11,6 @@ import javax.xml.stream.XMLStreamWriter;
 import org.alex73.android.StyledString.Tag;
 import org.alex73.android.arsc2.Config2;
 import org.alex73.android.arsc2.Entry2;
-import org.alex73.android.arsc2.LightString;
 import org.alex73.android.arsc2.Package2;
 import org.alex73.android.arsc2.ResourceProcessor;
 import org.apache.commons.io.FileUtils;
@@ -214,7 +213,7 @@ public class StAXEncoder implements IEncoder {
         for (int i = 0; i < str.raw.length(); i++) {
             for (int j = 0; j < str.tags.length; j++) {
                 if (str.tags[j].start == i) {
-                    String[] ta = str.tags[j].tagName.toString().split(";");
+                    String[] ta = str.tags[j].tagName.split(";");
                     wr.writeStartElement(ta[0]);
                     for (int k = 1; k < ta.length; k++) {
                         int pos = ta[k].indexOf('=');
@@ -234,7 +233,7 @@ public class StAXEncoder implements IEncoder {
 
     StringBuilder writeTextBuffer = new StringBuilder();
 
-    protected void writeText(XMLStreamWriter wr, LightString text) throws Exception {
+    protected void writeText(XMLStreamWriter wr, String text) throws Exception {
         writeTextBuffer.setLength(0);
         for (int i=0;i<text.length();i++) {
             char c = text.charAt(i);

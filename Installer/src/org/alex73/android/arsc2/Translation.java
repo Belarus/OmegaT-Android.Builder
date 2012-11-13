@@ -18,8 +18,8 @@ public class Translation {
 
     char[] text;
 
-    public Map<LightString, LightString> defaults;
-    public Map<LightString, Map<StyledIdString, StyledString>> exact = new HashMap<LightString, Map<StyledIdString, StyledString>>();
+    public Map<String, String> defaults;
+    public Map<String, Map<StyledIdString, StyledString>> exact = new HashMap<String, Map<StyledIdString, StyledString>>();
 
     public Translation(TranslationStorePackage packageTranslations, TranslationStoreDefaults defaultTranslations) {
         this.packageTranslations=packageTranslations;
@@ -32,16 +32,16 @@ public class Translation {
         readText(data);
 
         int defaultsCount = data.readInt();
-        defaults = new HashMap<LightString, LightString>(defaultsCount);
+        defaults = new HashMap<String, String>(defaultsCount);
         for (int i = 0; i < defaultsCount; i++) {
-            LightString source = readString(data);
-            LightString translation = readString(data);
+            String source = readString(data);
+            String translation = readString(data);
             defaults.put(source, translation);
         }
 
         int packagesCount = data.readInt();
         for (int i = 0; i < packagesCount; i++) {
-            LightString pkg = readString(data);
+            String pkg = readString(data);
             int count = data.readInt();
             Map<StyledIdString, StyledString> map = new HashMap<StyledIdString, StyledString>(count);
             for (int j = 0; j < count; j++) {
@@ -65,10 +65,10 @@ public class Translation {
         strb = null;
     }
 
-    private LightString readString(DataInputStream data) throws IOException {
+    private String readString(DataInputStream data) throws IOException {
         int pos = data.readInt();
         int len = data.readShort();
-        return new LightString(text, pos, len);
+        return new String(text, pos, len);
     }
 
     private StyledString readStyledString(DataInputStream data) throws IOException {
@@ -122,7 +122,7 @@ public class Translation {
         }
 
         if (!source.hasTags()) {
-            LightString defaultTranslation = defaultTranslations.getTranslation(source.raw);
+            String defaultTranslation = defaultTranslations.getTranslation(source.raw);
             if (defaultTranslation != null) {
                 StyledString str = new StyledString();
                 str.raw = defaultTranslation;

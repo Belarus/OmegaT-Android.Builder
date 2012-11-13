@@ -91,8 +91,7 @@ public class TranslationStorePackage {
             styledStrings.add(r);
         }
 
-        private short getPlainStringIndex(CharSequence chars) {
-            String str = chars.toString();
+        private short getPlainStringIndex(String str) {
             Short index = plainStringIndex.get(str);
             if (index == null) {
                 index = i2s(plainStrings.size());

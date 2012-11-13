@@ -11,7 +11,6 @@ import java.util.zip.ZipFile;
 import org.alex73.android.Assert;
 import org.alex73.android.StAXDecoderReader2;
 import org.alex73.android.StyledString;
-import org.alex73.android.arsc2.LightString;
 import org.alex73.android.arsc2.ResourceProcessor;
 import org.alex73.android.arsc2.StringTable2;
 import org.alex73.android.arsc2.Translation;
@@ -43,16 +42,16 @@ public class Tests {
 
         StyledString s1 = new StyledString();
         StyledString s2 = new StyledString();
-        s1.raw = new LightString(" zz   tt ");
+        s1.raw = " zz   tt ";
         s1.tags = new StyledString.Tag[1];
         s1.tags[0] = new StyledString.Tag();
-        s1.tags[0].tagName = new LightString("b");
+        s1.tags[0].tagName = "b";
         s1.tags[0].start = 6;
         s1.tags[0].end = 6;
-        s2.raw = new LightString("zz tt");
+        s2.raw = "zz tt";
         s2.tags = new StyledString.Tag[1];
         s2.tags[0] = new StyledString.Tag();
-        s2.tags[0].tagName = new LightString("b");
+        s2.tags[0].tagName = "b";
         s2.tags[0].start = 3;
         s2.tags[0].end = 3;
         s1.removeSpaces();
@@ -62,7 +61,7 @@ public class Tests {
     private static void testStAXDecoderReader(String src, String result) {
         StyledString str = new StyledString();
         str.tags = new StyledString.Tag[0];
-        str.raw = new LightString(src);
+        str.raw = src;
         str = StAXDecoderReader2.postProcessString(new StringBuilder(src), new ArrayList<StyledString.Tag>());
         Assert.assertTrue("Result: '" + str.raw + "', Expected: '" + result + "'", result.equals(str.raw));
     }

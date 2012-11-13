@@ -1,7 +1,7 @@
 package org.alex73.android;
 
 public class StyledIdString extends StyledString {
-    public CharSequence id;
+    public String id;
 
     public boolean equals(Object o) {
         boolean r = super.equals(o);
