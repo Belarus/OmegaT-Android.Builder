@@ -56,6 +56,15 @@ public class PackTranslation {
         Core.initializeConsole(params);
         PluginUtils.loadPlugins(params);
 
+        File[] existFiles = new File("../Installer/res/raw/").listFiles();
+        if (existFiles != null) {
+            for (File f : existFiles) {
+                if (!f.delete()) {
+                    throw new Exception("Error delete " + f);
+                }
+            }
+        }
+
         ProjectProperties props = ProjectFileStorage.loadProjectProperties(new File(
                 "../../Android.OmegaT/Android/"));
         RealProject project = new RealProject(props);

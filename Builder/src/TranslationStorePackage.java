@@ -1,6 +1,7 @@
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -14,8 +15,6 @@ import java.util.zip.GZIPOutputStream;
 import org.alex73.android.Assert;
 import org.alex73.android.StyledIdString;
 import org.alex73.android.StyledString;
-
-import TranslationStoreDefaults.SortedString;
 
 public class TranslationStorePackage {
     public static final Charset UTF8 = Charset.forName("UTF-8");
@@ -32,8 +31,12 @@ public class TranslationStorePackage {
     }
 
     public void save() throws Exception {
-        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(
-                new FileOutputStream("../Installer/res/raw/translation-" + name + ".bin"))));
+        File outFile = new File("../Installer/res/raw/translation_" + name.replace('.', '_') + ".bin");
+        if (outFile.exists()) {
+            throw new Exception(outFile + " already exist");
+        }
+        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(
+                outFile))));
 
         SortedStyledStringMap list = new SortedStyledStringMap();
         for (Map.Entry<StyledIdString, StyledString> en : collected.entrySet()) {
@@ -125,25 +128,38 @@ public class TranslationStorePackage {
                 out.writeInt(off);
             }
 
-            out.write(text.size());
+            out.writeInt(text.size());
             out.write(text.toByteArray());
 
             List<Short> allShorts = new ArrayList<>();
 
-            out.write(styledStrings.size());
+            out.writeInt(styledStrings.size());
             for (SortedStyledString s : styledStrings) {
                 out.writeInt(s.hash);
                 out.writeInt(allShorts.size());
                 allShorts.add(s.idIndex);
                 allShorts.add(s.sourceIndex);
-                allShorts.add(i2s(s.sourceTags.length));
-                for(int i=0;i<s.sourceTags.length;i++) {
-                    allShorts.add(s.sourceTags[i].tagNameIndex);
-                    TODO
-                }
                 allShorts.add(s.translationIndex);
-                allShorts.add(i2s(s.translationTags.length));
-              TODO
+
+                if (s.sourceTags.length >= 128 || s.translationTags.length >= 128) {
+                    throw new Exception("Too many tags");
+                }
+                allShorts.add(i2s(s.sourceTags.length | (s.translationTags.length << 8)));
+                for (int i = 0; i < s.sourceTags.length; i++) {
+                    allShorts.add(s.sourceTags[i].tagNameIndex);
+                    allShorts.add(s.sourceTags[i].start);
+                    allShorts.add(s.sourceTags[i].end);
+                }
+                for (int i = 0; i < s.translationTags.length; i++) {
+                    allShorts.add(s.translationTags[i].tagNameIndex);
+                    allShorts.add(s.translationTags[i].start);
+                    allShorts.add(s.translationTags[i].end);
+                }
+            }
+
+            out.writeInt(allShorts.size());
+            for (short s : allShorts) {
+                out.writeShort(s);
             }
         }
     }

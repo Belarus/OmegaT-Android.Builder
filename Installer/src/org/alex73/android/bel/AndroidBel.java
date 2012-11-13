@@ -19,7 +19,6 @@ public class AndroidBel extends Activity {
 
     Set<String> translatedPackages = new HashSet<String>();
     List<FileInfo> filesForProcess = new ArrayList<FileInfo>();
-    Translation translation;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

@@ -82,7 +82,7 @@ public class TranslationStoreDefaults {
                 out.writeInt(s.valueOffset);
             }
 
-            out.write(text.size());
+            out.writeInt(text.size());
             out.write(text.toByteArray());
         }
     }

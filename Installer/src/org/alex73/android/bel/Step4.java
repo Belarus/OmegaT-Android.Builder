@@ -11,6 +11,8 @@ import java.util.zip.ZipFile;
 import org.alex73.android.arsc2.ResourceProcessor;
 import org.alex73.android.arsc2.Translation;
 import org.alex73.android.arsc2.reader.ChunkReader2;
+import org.alex73.android.arsc2.translation.TranslationStoreDefaults;
+import org.alex73.android.arsc2.translation.TranslationStorePackage;
 import org.alex73.android.common.FileInfo;
 
 import android.text.method.ScrollingMovementMethod;
@@ -20,6 +22,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class Step4 extends Step {
+    TranslationStoreDefaults translationDefaults;
+    
     public Step4(AndroidBel ui) {
         super(ui);
     }
@@ -45,15 +49,8 @@ public class Step4 extends Step {
 
         showOperation(R.string.opReadTranslation);
         incProgress();
-        InputStream inTr = ui.getResources().openRawResource(R.raw.translation);
-        if (inTr == null) {
-            throw new Exception("Translation not found");
-        }
-        try {
-            ui.translation = new Translation(new GZIPInputStream(inTr));
-        } finally {
-            inTr.close();
-        }
+
+        translationDefaults = new TranslationStoreDefaults(ui.getResources());
 
         showOperation(R.string.opCheckInstalled);
         incProgress();
@@ -139,7 +136,7 @@ public class Step4 extends Step {
             return false;
         }
 
-        return ui.translation.isPackageTranslated(fi.packageName);
+        return TranslationStorePackage.isPackageTranslated(ui.getResources(), fi.packageName);
     }
 
     void translateApk(FileInfo fi) throws Exception {
@@ -172,7 +169,8 @@ public class Step4 extends Step {
         if (stopped) {
             return;
         }
-        rs.process(fi.packageName, ui.translation);
+        rs.process(fi.packageName, new Translation(new TranslationStorePackage(ui.getResources(), fi.packageName),
+                translationDefaults));
 
         if (stopped) {
             return;

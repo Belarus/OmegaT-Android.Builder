@@ -9,12 +9,22 @@ import java.util.Map;
 
 import org.alex73.android.StyledIdString;
 import org.alex73.android.StyledString;
+import org.alex73.android.arsc2.translation.TranslationStoreDefaults;
+import org.alex73.android.arsc2.translation.TranslationStorePackage;
 
 public class Translation {
+    TranslationStorePackage packageTranslations;
+    TranslationStoreDefaults defaultTranslations;
+
     char[] text;
 
     public Map<LightString, LightString> defaults;
     public Map<LightString, Map<StyledIdString, StyledString>> exact = new HashMap<LightString, Map<StyledIdString, StyledString>>();
+
+    public Translation(TranslationStorePackage packageTranslations, TranslationStoreDefaults defaultTranslations) {
+        this.packageTranslations=packageTranslations;
+        this.defaultTranslations=defaultTranslations;
+    }
 
     public Translation(InputStream in) throws IOException {
         DataInputStream data = new DataInputStream(new BufferedInputStream(in, 16384));
@@ -91,6 +101,7 @@ public class Translation {
     }
 
     public StyledString getTranslation(String packageName, String id, StyledString source) {
+        
         Map<StyledIdString, StyledString> tr = exact.get(packageName);
         if (tr != null) {
             source.removeSpaces();
@@ -111,7 +122,7 @@ public class Translation {
         }
 
         if (!source.hasTags()) {
-            LightString defaultTranslation = defaults.get(source.raw);
+            LightString defaultTranslation = defaultTranslations.getTranslation(source.raw);
             if (defaultTranslation != null) {
                 StyledString str = new StyledString();
                 str.raw = defaultTranslation;

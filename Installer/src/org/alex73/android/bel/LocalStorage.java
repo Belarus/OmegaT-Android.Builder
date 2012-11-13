@@ -65,7 +65,7 @@ public class LocalStorage {
         File[] files = dir.listFiles(filter);
         if (files != null) {
             for (File f : files) {
-                if (f.getName().equals("Settings.apk"))
+                if (f.getName().equals("DeskClock.apk")) //TODO
                     out.add(f);
             }
         }

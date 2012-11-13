@@ -52,6 +52,19 @@ public class LightString implements CharSequence, Comparable<LightString> {
         return true;
     }
 
+    int hash;
+
+    public int hashCode() {
+        int h = hash;
+        if (h == 0 && length > 0) {
+            for (int i = 0; i < length; i++) {
+                h = 31 * h + base[offset + i];
+            }
+            hash = h;
+        }
+        return h;
+    }
+
     public int indexOf(int ch, int fromIndex) {
         for (int i = fromIndex; i < length; i++) {
             if (base[offset + i] == ch) {
