@@ -39,8 +39,8 @@ public class TranslationStoreDefaults {
     }
 
     public String getTranslation(String source) {
-        filterHashes(source);
-        for (int i = hashIndexFirst; i <= hashIndexLast; i++) {
+        HashFilter.Range range = HashFilter.filterHashes(hash, source.hashCode());
+        for (int i = range.min; i <= range.max; i++) {
             String key = createKeyString(i);
             if (key.equals(source)) {
                 return createValueString(i);
@@ -59,39 +59,5 @@ public class TranslationStoreDefaults {
         int begin = valueOffset[stringIndex];
         int end = stringIndex + 1 < keyOffset.length ? keyOffset[stringIndex + 1] : text.length;
         return UTFUtils.utf8decoder(text, begin, end - begin);
-    }
-
-    int hashIndexFirst, hashIndexLast;
-
-    private void filterHashes(String source) {
-        int h = source.hashCode();
-
-        int minIndex = 0;
-        int maxIndex = hash.length - 1;
-        int index = 0;
-        while (minIndex <= maxIndex) {
-            index = (minIndex + maxIndex) >>> 1;
-            if (hash[index] < h) {
-                minIndex = index + 1;
-            } else if (hash[index] > h) {
-                maxIndex = index - 1;
-            } else {
-                break;
-            }
-        }
-        if (hash[index] != h) {
-            hashIndexFirst = 1;
-            hashIndexLast = 0;
-            return;
-        }
-
-        hashIndexFirst = index;
-        hashIndexLast = index;
-        while (hashIndexFirst > 0 && hash[hashIndexFirst - 1] == h) {
-            hashIndexFirst--;
-        }
-        while (hashIndexLast < hash.length - 1 && hash[hashIndexLast + 1] == h) {
-            hashIndexLast++;
-        }
     }
 }

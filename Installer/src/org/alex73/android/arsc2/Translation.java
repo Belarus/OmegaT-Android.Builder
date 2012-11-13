@@ -22,8 +22,8 @@ public class Translation {
     public Map<String, Map<StyledIdString, StyledString>> exact = new HashMap<String, Map<StyledIdString, StyledString>>();
 
     public Translation(TranslationStorePackage packageTranslations, TranslationStoreDefaults defaultTranslations) {
-        this.packageTranslations=packageTranslations;
-        this.defaultTranslations=defaultTranslations;
+        this.packageTranslations = packageTranslations;
+        this.defaultTranslations = defaultTranslations;
     }
 
     public Translation(InputStream in) throws IOException {
@@ -101,24 +101,19 @@ public class Translation {
     }
 
     public StyledString getTranslation(String packageName, String id, StyledString source) {
-        
-        Map<StyledIdString, StyledString> tr = exact.get(packageName);
-        if (tr != null) {
-            source.removeSpaces();
-            StyledIdString si = new StyledIdString();
-            si.id = id;
-            si.raw = source.raw;
-            si.tags = source.tags;
-            StyledString trans = tr.get(si);
-            if (trans != null) {
-                if (trans.equals(source)) {
-                    // the same string
-                    return null;
-                } else {
-                    return trans;
-                }
+        source.removeSpaces();
+        StyledIdString si = new StyledIdString();
+        si.id = id;
+        si.raw = source.raw;
+        si.tags = source.tags;
+        StyledString trans = packageTranslations.getTranslation(si);
+        if (trans != null) {
+            if (trans.equals(source)) {
+                // the same string
+                return null;
+            } else {
+                return trans;
             }
-            notFoundInExact(packageName, id, source);
         }
 
         if (!source.hasTags()) {
@@ -131,8 +126,5 @@ public class Translation {
         }
 
         return null;
-    }
-
-    public void notFoundInExact(String packageName, String id, StyledString source) {
     }
 }
