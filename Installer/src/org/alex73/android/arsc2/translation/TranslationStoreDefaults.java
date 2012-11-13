@@ -3,16 +3,14 @@ package org.alex73.android.arsc2.translation;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.zip.GZIPInputStream;
 
 import org.alex73.android.bel.R;
+import org.alex73.android.common.UTFUtils;
 
 import android.content.res.Resources;
 
 public class TranslationStoreDefaults {
-    private static final String UTF8 = "UTF-8";
-
     private int stringsCount;
     private int[] hash, keyOffset, valueOffset;
     private byte[] text;
@@ -52,23 +50,15 @@ public class TranslationStoreDefaults {
     }
 
     private String createKeyString(int stringIndex) {
-        try {
-            int begin = keyOffset[stringIndex];
-            int end = valueOffset[stringIndex];
-            return new String(text, begin, end - begin, UTF8);
-        } catch (UnsupportedEncodingException ex) {
-            throw new RuntimeException(ex);
-        }
+        int begin = keyOffset[stringIndex];
+        int end = valueOffset[stringIndex];
+        return UTFUtils.utf8decoder(text, begin, end - begin);
     }
 
     private String createValueString(int stringIndex) {
-        try {
-            int begin = valueOffset[stringIndex];
-            int end = stringIndex + 1 < keyOffset.length ? keyOffset[stringIndex + 1] : text.length;
-            return new String(text, begin, end - begin, UTF8);
-        } catch (UnsupportedEncodingException ex) {
-            throw new RuntimeException(ex);
-        }
+        int begin = valueOffset[stringIndex];
+        int end = stringIndex + 1 < keyOffset.length ? keyOffset[stringIndex + 1] : text.length;
+        return UTFUtils.utf8decoder(text, begin, end - begin);
     }
 
     int hashIndexFirst, hashIndexLast;
