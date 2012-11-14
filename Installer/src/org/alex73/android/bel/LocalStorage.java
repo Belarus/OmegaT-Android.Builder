@@ -7,18 +7,24 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.StringWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
-import java.util.regex.Matcher;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.alex73.android.common.FileInfo;
 import org.alex73.android.common.zip.ApkUpdater;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import android.os.Environment;
+import android.os.StatFs;
+import android.util.Xml;
 
 public class LocalStorage {
     final static File FRAMEWORK_DIR = new File("/system/framework/");
@@ -27,7 +33,8 @@ public class LocalStorage {
 
     final static File USER_DIR = new File("/data/app/");
 
-    final static String DIR_STORE = "/sdcard/i18n-bel/";
+    final static String BACKUP_PARTITION = Environment.getExternalStorageDirectory().getPath();
+    final static String BACKUP_DIR = BACKUP_PARTITION + "/i18n-bel/backup/";
 
     final static Pattern RE_APKNAME = Pattern.compile("(.+)\\.apk$");
 
@@ -37,222 +44,85 @@ public class LocalStorage {
 
     final static String UTF8 = "UTF-8";
 
+    final static String DATETIME_PATTERN = "-yyyyMMdd-HHmmss";
+
     protected boolean stopped;
 
     Properties mv1;
 
-    public List<File> getLocalFiles() throws Exception {
-        List<File> files = new ArrayList<File>();
+    public List<FileInfo> getLocalFiles() throws Exception {
+        final List<FileInfo> files = new ArrayList<FileInfo>();
+        InputStream in = new FileInputStream(new File("/data/system/packages.xml"));
+        try {
+            Xml.parse(in, Xml.Encoding.UTF_8, new DefaultHandler() {
+                public void startElement(String uri, String localName, String qName, Attributes attributes)
+                        throws SAXException {
+                    if ("package".equals(localName)) {
+                        String name = attributes.getValue("name");
+                        String codePath = attributes.getValue("codePath");
+                        if (name != null && codePath != null) {
+                            FileInfo fi = new FileInfo(new File(codePath));
+                            fi.packageName = name;
+                            files.add(fi);
+                        }
+                    }
+                }
 
-        appendApks(APP_DIR, files, FILTER_APK);
-        appendApks(FRAMEWORK_DIR, files, FILTER_APK);
-        appendApks(USER_DIR, files, FILTER_APK);
+            });
+        } finally {
+            in.close();
+        }
 
         return files;
     }
 
-    public List<File> getLocalFilesNew() throws Exception {
-        List<File> files = new ArrayList<File>();
+    public List<File> getLocalFilesNew(List<FileInfo> files) throws Exception {
+        List<File> result = new ArrayList<File>();
 
-        appendApks(APP_DIR, files, FILTER_APK_NEW);
-        appendApks(FRAMEWORK_DIR, files, FILTER_APK_NEW);
-        appendApks(USER_DIR, files, FILTER_APK_NEW);
+        Set<File> dirs = new TreeSet<File>();
+        dirs.add(APP_DIR);
+        dirs.add(FRAMEWORK_DIR);
+        dirs.add(USER_DIR);
+        for (FileInfo fi : files) {
+            dirs.add(fi.localFile.getParentFile());
+        }
+        for (File d : dirs) {
+            appendApks(d, result, FILTER_APK_NEW);
+        }
 
-        return files;
+        return result;
     }
 
     private void appendApks(File dir, List<File> out, FileFilter filter) {
         File[] files = dir.listFiles(filter);
         if (files != null) {
             for (File f : files) {
-                if (f.getName().equals("DeskClock.apk")) //TODO
-                    out.add(f);
+                out.add(f);
             }
-        }
-    }
-
-    static Pattern RE_VERSION1 = Pattern.compile("([0-9a-f]{40})_([0-9a-f]{40})");
-    static Pattern RE_VERSION2 = Pattern
-            .compile("v2: origApkSha1=([0-9a-f]{40}) transARSCSha1=([0-9a-f]{40})");
-
-    byte[] buffer = new byte[1024];
-
-    public void getVersionInfo(FileInfo fi) throws Exception {
-        ZipFile apk = new ZipFile(fi.localFile);
-        try {
-            ZipEntry resourceEntry = apk.getEntry(RES_FILE);
-            if (resourceEntry == null) {
-                // resource not found in this apk
-                return;
-            }
-
-            if (stopped) {
-                return;
-            }
-
-            fi.localSize = (int) fi.localFile.length();
-
-            // already patched - read stored version
-            ZipEntry patchedEntry = apk.getEntry(PATCHED_INFO);
-            if (patchedEntry != null) {
-                String v = readString(apk, patchedEntry);
-                Matcher m;
-                if ((m = RE_VERSION1.matcher(v)).matches()) {
-                    if (mv1 == null) {
-                        mv1 = new Properties();
-                        InputStream inv1 = this.getClass().getResourceAsStream("v1.properties");
-                        try {
-                            mv1.load(inv1);
-                        } finally {
-                            inv1.close();
-                        }
-                    }
-                    fi.originID = mv1.getProperty(m.group(1) + '_' + fi.localFile.getName());
-                    fi.translatedID = m.group(2);
-                } else if ((m = RE_VERSION2.matcher(v)).matches()) {
-                    fi.originID = m.group(1);
-                    fi.translatedID = m.group(2);
-                }
-            }
-            if (fi.originID == null) {
-                fi.originID = Utils.sha1(fi.localFile);
-                fi.translatedID = null;
-            }
-        } finally {
-            apk.close();
-        }
-    }
-
-    public byte[] getResources(File f) throws Exception {
-        ZipFile apk = new ZipFile(f);
-        try {
-            ZipEntry resourceEntry = apk.getEntry(RES_FILE);
-            if (resourceEntry == null) {
-                // resource not found in this apk
-                return null;
-            }
-
-            if (stopped) {
-                return null;
-            }
-
-            InputStream in = apk.getInputStream(resourceEntry);
-            try {
-                return Utils.read(in);
-            } finally {
-                in.close();
-            }
-        } finally {
-            apk.close();
-        }
-    }
-
-    protected static final Pattern RE_NAME = Pattern.compile(".+_([A-Za-z0-9\\-]+)\\.arsc(\\.gz)?");
-
-    public String getVersion(String name) {
-        Matcher m = RE_NAME.matcher(name);
-        if (!m.matches()) {
-            throw new RuntimeException("Unknown version for " + name);
-        }
-        return m.group(1);
-    }
-
-    private String readString(ZipFile zip, ZipEntry entry) throws Exception {
-        StringWriter wr = new StringWriter(256);
-        Reader rd = new InputStreamReader(zip.getInputStream(entry), UTF8);
-        try {
-            int c;
-            char[] buffer = new char[256];
-            while ((c = rd.read(buffer)) > 0) {
-                wr.write(buffer, 0, c);
-            }
-        } finally {
-            rd.close();
-        }
-
-        return wr.toString();
-    }
-
-    public boolean existFile(String filename) throws Exception {
-        File outFile = new File(DIR_STORE + filename);
-
-        return outFile.exists();
-    }
-
-    /*
-     * public void storeFile(String filename, byte[] data) throws Exception { new File(DIR_STORE).mkdirs();
-     * 
-     * File outFile = new File(DIR_STORE + filename); File newFile = new File(DIR_STORE + filename + ".new");
-     * OutputStream out = new FileOutputStream(newFile); try { out.write(data); } finally { out.close(); }
-     * outFile.delete(); newFile.renameTo(outFile); }
-     */
-
-    public File storeFileBegin(String filename) throws Exception {
-        new File(DIR_STORE).mkdirs();
-
-        File newFile = new File(DIR_STORE + filename + ".new");
-
-        return newFile;
-    }
-
-    public void storeFileEnd(String filename) throws Exception {
-        File outFile = new File(DIR_STORE + filename);
-        File newFile = new File(DIR_STORE + filename + ".new");
-        newFile.setLastModified(outFile.lastModified());
-        outFile.delete();
-        newFile.renameTo(outFile);
-    }
-
-    public byte[] loadFile(String filename) throws Exception {
-        byte[] result;
-
-        InputStream in = new FileInputStream(DIR_STORE + filename);
-        try {
-            result = Utils.read(in);
-        } finally {
-            in.close();
-        }
-        return result;
-    }
-
-    public void patchFile(File f, FileInfo version, byte[] translatedResources) throws Exception {
-        // new ApkUpdater().append(f, version.store().getBytes(UTF8), translatedResources);
-        File fo = new File(f.getAbsolutePath() + ".new");
-        createReadableFile(fo);
-     //   new ApkUpdater().replace(f, fo, version.store().getBytes(UTF8), translatedResources);
-
-        fo.setLastModified(f.lastModified());
-        if (!f.delete()) {
-            throw new Exception("Error delete");
-        }
-        if (!fo.renameTo(f)) {
-            throw new Exception("Error renaming");
         }
     }
 
     public void patchFile(File f, byte[] translatedResources) throws Exception {
         File fo = new File(f.getAbsolutePath() + ".new");
         createReadableFile(fo);
-        new ApkUpdater().replace(f, fo,translatedResources);
+        new ApkUpdater().replace(f, fo, translatedResources);
 
         fo.setLastModified(f.lastModified());
-        if (!f.delete()) {
-            throw new Exception("Error delete");
-        }
         if (!fo.renameTo(f)) {
             throw new Exception("Error renaming");
         }
     }
 
-    protected void backupApk(File f) throws Exception {
-        File outFile = new File(DIR_STORE + "/backup/" + f.getName());
-        if (outFile.exists()) {
-            return;
-        }
+    public StatFs getFreeSpaceForBackups() throws Exception {
+        return new StatFs(BACKUP_PARTITION);
+    }
+
+    public void backupApk(File f) throws Exception {
+        File outFile = new File(BACKUP_DIR + f.getName() + new SimpleDateFormat(DATETIME_PATTERN).format(new Date())
+                + ".bak");
         outFile.getParentFile().mkdirs();
 
-        File outFileNew = new File(DIR_STORE + "/backup/new-" + f.getName());
-        FileOutputStream out = new FileOutputStream(outFileNew);
+        FileOutputStream out = new FileOutputStream(outFile);
         try {
             FileInputStream in = new FileInputStream(f);
             try {
@@ -263,7 +133,6 @@ public class LocalStorage {
         } finally {
             out.close();
         }
-        outFileNew.renameTo(outFile);
     }
 
     /**
@@ -281,8 +150,8 @@ public class LocalStorage {
     public void remountSystem(final boolean allowWrite) throws Exception {
         final StringBuilder systemDevice = new StringBuilder();
 
-        BufferedReader rd = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/mounts"),
-                "UTF-8"), 8192);
+        BufferedReader rd = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/mounts"), "UTF-8"),
+                8192);
         String s;
         while ((s = rd.readLine()) != null) {
             String[] a = s.split("\\s+");
@@ -290,6 +159,7 @@ public class LocalStorage {
                 systemDevice.append(a[0]);
             }
         }
+        rd.close();
 
         if (systemDevice.length() == 0) {
             throw new Exception("/system partition not found for remount");

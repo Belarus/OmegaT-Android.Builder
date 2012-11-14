@@ -28,6 +28,7 @@ public class FileInfo {
 
     public FileInfo(File f) {
         localFile = f;
+        localSize = (int) localFile.length();
     }
 
     public String store() throws IOException {

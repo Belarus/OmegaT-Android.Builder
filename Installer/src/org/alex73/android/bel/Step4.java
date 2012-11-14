@@ -2,9 +2,8 @@ package org.alex73.android.bel;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -15,6 +14,7 @@ import org.alex73.android.arsc2.translation.TranslationStoreDefaults;
 import org.alex73.android.arsc2.translation.TranslationStorePackage;
 import org.alex73.android.common.FileInfo;
 
+import android.os.StatFs;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.widget.Button;
@@ -23,7 +23,7 @@ import android.widget.TextView;
 
 public class Step4 extends Step {
     TranslationStoreDefaults translationDefaults;
-    
+
     public Step4(AndroidBel ui) {
         super(ui);
     }
@@ -55,22 +55,43 @@ public class Step4 extends Step {
         showOperation(R.string.opCheckInstalled);
         incProgress();
 
+        List<FileInfo> files = local.getLocalFiles();
         // delete .new files
-        List<File> filesOldNew = local.getLocalFilesNew();
+        List<File> filesOldNew = local.getLocalFilesNew(files);
         for (File f : filesOldNew) {
             f.delete();
         }
 
-        List<FileInfo> files = new ArrayList<FileInfo>();
-        // remove non-translated apk from list
-        for (File f : local.getLocalFiles()) {
+        // remove non-translatable apk from list
+        for (Iterator<FileInfo> it = files.iterator(); it.hasNext();) {
+            FileInfo fi = it.next();
+            if (!needTranslate(fi)) {
+                it.remove();
+            }
             if (stopped) {
                 return;
             }
-            FileInfo fi = new FileInfo(f);
-            if (needTranslate(fi)) {
-                files.add(fi);
-            }
+        }
+
+        StatFs freeStat = local.getFreeSpaceForBackups();
+        int requiredBlocks = 0;
+        int blockSize = freeStat.getBlockSize();
+        for (FileInfo fi : files) {
+            requiredBlocks += (fi.localSize + blockSize - 1) / blockSize;
+        }
+        requiredBlocks += 4;
+        if (requiredBlocks > freeStat.getAvailableBlocks()) {
+            String txt = ui.getResources().getText(R.string.textNoSpace).toString();
+            txt = txt.replace("$0", LocalStorage.BACKUP_DIR);
+            txt = txt.replace("$1", Utils.textSize(freeStat.getAvailableBlocks() * blockSize));
+            txt = txt.replace("$2", Utils.textSize(requiredBlocks * blockSize));
+            final String txtOut = txt;
+            ui.runOnUiThread(new Runnable() {
+                public void run() {
+                    new StepFinish(ui, txtOut).doit();
+                }
+            });
+            return;
         }
 
         setProgressTotal(files.size());
@@ -83,7 +104,7 @@ public class Step4 extends Step {
                 return;
             }
             incProgress();
-            phase = "захоўвалі " + fi.localFile.getName();
+            phase = "захоўвалі рэзэрвовую копію " + fi.localFile.getName();
             showFile(fi.localFile.getName());
             showOperation(R.string.opInstallTranslation);
             local.backupApk(fi.localFile);
@@ -98,7 +119,7 @@ public class Step4 extends Step {
             final File ff = fi.localFile;
             ui.runOnUiThread(new Runnable() {
                 public void run() {
-                    textLog.setText(textLog.getText() + ff.getName() + " перакладзены\n");
+                    textLog.setText(ff.getName() + " перакладзены\n" + textLog.getText());
                 }
             });
         }
@@ -120,22 +141,14 @@ public class Step4 extends Step {
 
         ui.runOnUiThread(new Runnable() {
             public void run() {
-                new StepFinish(ui, ui.getResources().getText(R.string.textFinished)).doit();
+                String txt = ui.getResources().getText(R.string.textFinished).toString();
+                txt = txt.replace("$0", LocalStorage.BACKUP_DIR);
+                new StepFinish(ui, txt).doit();
             }
         });
     }
 
     boolean needTranslate(FileInfo fi) throws Exception {
-        fi.readManifestInfo();
-
-        ZipFile zip = new ZipFile(fi.localFile);
-        ZipEntry en = zip.getEntry("resources.arsc");
-        zip.close();
-
-        if (en == null) {
-            return false;
-        }
-
         return TranslationStorePackage.isPackageTranslated(ui.getResources(), fi.packageName);
     }
 

@@ -142,6 +142,7 @@ public final class R {
         public static final int textFinished=0x7f050014;
         public static final int textIntro=0x7f050011;
         public static final int textLabel3=0x7f050018;
+        public static final int textNoSpace=0x7f050019;
         public static final int textStopped=0x7f050012;
         public static final int textUploadSize=0x7f050016;
     }
