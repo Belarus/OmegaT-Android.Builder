@@ -55,6 +55,8 @@ public class Step4 extends Step {
         showOperation(R.string.opCheckInstalled);
         incProgress();
 
+        local = new LocalStorage();
+
         List<FileInfo> files = local.getLocalFiles();
         // delete .new files
         List<File> filesOldNew = local.getLocalFilesNew(files);
@@ -98,7 +100,11 @@ public class Step4 extends Step {
         showOperation(R.string.opInstall);
         showFile("");
         local.backupList();
-        local.remountSystem(true);
+
+        origDirsPerms = local.getDirsPermissions(files);
+        origFilesPerms = local.getFilesPermissions(files);
+
+        local.remountRW(origDirsPerms, origFilesPerms);
         // translate
         for (FileInfo fi : files) {
             if (stopped) {
@@ -113,7 +119,7 @@ public class Step4 extends Step {
             }
 
             phase = "перакладалі " + fi.localFile.getName();
-            translateApk(fi);
+            translateApk(fi, local);
             phase = "";
             if (stopped) {
                 return;
@@ -127,10 +133,14 @@ public class Step4 extends Step {
             });
         }
         try {
-            local.remountSystem(false);
+            local.remountRO(origDirsPerms, origFilesPerms);
         } catch (Exception ex) {
             // hide remount exception
         }
+        origDirsPerms = null;
+        origFilesPerms = null;
+        local = null;
+
         if (stopped) {
             return;
         }
@@ -155,7 +165,7 @@ public class Step4 extends Step {
         return TranslationStorePackage.isPackageTranslated(ui.getResources(), fi.packageName);
     }
 
-    void translateApk(FileInfo fi) throws Exception {
+    void translateApk(FileInfo fi, LocalStorage local) throws Exception {
         if (stopped) {
             return;
         }
@@ -185,8 +195,8 @@ public class Step4 extends Step {
         if (stopped) {
             return;
         }
-        rs.process(fi.packageName, new Translation(new TranslationStorePackage(ui.getResources(), fi.packageName),
-                translationDefaults));
+        rs.process(fi.packageName, new Translation(new TranslationStorePackage(ui.getResources(),
+                fi.packageName), translationDefaults));
 
         if (stopped) {
             return;

@@ -2,6 +2,7 @@ package org.alex73.android.bel;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
 
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -18,11 +19,14 @@ public abstract class Step extends Thread {
     protected Button btnCancel;
     protected Button btnNext;
     protected ProgressBar progress;
-    protected String phase="";
+    protected String phase = "";
 
     boolean stopped;
-    protected LocalStorage local = new LocalStorage();
     protected RemoteSite remote = new RemoteSite();
+
+    static LocalStorage local;
+    static List<LocalStorage.FilePerm> origDirsPerms;
+    static List<LocalStorage.FilePerm> origFilesPerms;
 
     public Step(AndroidBel activity) {
         this.ui = activity;
@@ -51,7 +55,8 @@ public abstract class Step extends Thread {
             final String s = wr.toString();
             ui.runOnUiThread(new Runnable() {
                 public void run() {
-                    new StepFinish(ui, ui.getResources().getText(R.string.textError) + " (" + phase + "): " + s).doit();
+                    new StepFinish(ui, ui.getResources().getText(R.string.textError) + " (" + phase + "): "
+                            + s).doit();
                 }
             });
         }
@@ -66,7 +71,6 @@ public abstract class Step extends Thread {
                     btnCancel.setEnabled(false);
                     btnCancel.setText(R.string.btnStopping);
                     stopped = true;
-                    local.stopped = true;
                     remote.stopped = true;
                 }
             });

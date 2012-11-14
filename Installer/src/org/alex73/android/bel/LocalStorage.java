@@ -9,11 +9,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -48,9 +52,42 @@ public class LocalStorage {
 
     final static String DATETIME_PATTERN = "-yyyyMMdd-HHmmss";
 
-    protected boolean stopped;
-
     Properties mv1;
+
+    private String systemMountDevice, systemMountOptions;
+
+    public LocalStorage() throws Exception {
+        BufferedReader rd = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/mounts"),
+                "UTF-8"));
+        String s;
+        while ((s = rd.readLine()) != null) {
+            String[] a = s.split("\\s+");
+            if (a[1].equals("/system")) {
+                systemMountDevice = a[0];
+                systemMountOptions = a[3];
+            }
+        }
+        rd.close();
+
+        if (systemMountDevice == null) {
+            throw new Exception("/system partition not found for remount");
+        }
+
+        String[] opts = systemMountOptions.split(",");
+        systemMountOptions = "";
+        boolean found = false;
+        for (String o : opts) {
+            if (o.equals("ro") || o.equals("rw")) {
+                found = true;
+            } else {
+                systemMountOptions += ',' + o;
+            }
+        }
+
+        if (!found) {
+            throw new Exception("/system partition mounted with unknow noptions");
+        }
+    }
 
     public List<FileInfo> getLocalFiles() throws Exception {
         final List<FileInfo> files = new ArrayList<FileInfo>();
@@ -119,8 +156,130 @@ public class LocalStorage {
         return new StatFs(BACKUP_PARTITION);
     }
 
+    public List<FilePerm> getFilesPermissions(List<FileInfo> files) throws Exception {
+        List<String> filesList = new ArrayList<String>();
+        for (FileInfo fi : files) {
+            filesList.add(fi.localFile.getPath());
+        }
+        Collections.sort(filesList);
+
+        StringBuilder cmd = new StringBuilder("ls -l ");
+        for (String f : filesList) {
+            cmd.append('"').append(f).append('"').append(' ');
+        }
+        final List<String> ls = new ArrayList<String>();
+        new ExecProcess("su") {
+            @Override
+            protected void processOutputLine(String line) {
+                ls.add(line);
+            }
+        }.exec(cmd.toString());
+
+        return calcPermissions(filesList, ls, false);
+    }
+
+    public List<FilePerm> getDirsPermissions(List<FileInfo> files) throws Exception {
+        List<String> filesList = new ArrayList<String>();
+        for (FileInfo fi : files) {
+            String dir = fi.localFile.getParent();
+            if (!filesList.contains(dir)) {
+                filesList.add(dir);
+            }
+        }
+        Collections.sort(filesList);
+
+        StringBuilder cmd = new StringBuilder("ls -l -d ");
+        for (String f : filesList) {
+            cmd.append('"').append(f).append('"').append(' ');
+        }
+        final List<String> ls = new ArrayList<String>();
+        new ExecProcess("su") {
+            @Override
+            protected void processOutputLine(String line) {
+                ls.add(line);
+            }
+        }.exec(cmd.toString());
+
+        return calcPermissions(filesList, ls, true);
+    }
+
+    static final Pattern RE_LS_FILE = Pattern
+            .compile("\\-([rwx\\-]{9})\\s+([a-z0-9_]+)\\s+([a-z0-9_]+)\\s+([0-9]+)\\s+([0-9]{4}\\-[0-9]{2}\\-[0-9]{2})\\s+([0-9]{2}\\:[0-9]{2})\\s+(\\S+)");
+    static final Pattern RE_LS_DIR = Pattern
+            .compile("d([rwx\\-]{9})\\s+([a-z0-9_]+)\\s+([a-z0-9_]+)\\s+([0-9]{4}\\-[0-9]{2}\\-[0-9]{2})\\s+([0-9]{2}\\:[0-9]{2})\\s+(\\S+)");
+
+    private List<FilePerm> calcPermissions(List<String> filesList, List<String> lsout, boolean isDirs)
+            throws Exception {
+        if (filesList.size() != lsout.size()) {
+            throw new Exception("Wrong ls size");
+        }
+
+        List<FilePerm> result = new ArrayList<FilePerm>();
+        for (int i = 0; i < filesList.size(); i++) {
+            FilePerm p = new FilePerm();
+            p.file = filesList.get(i);
+            Matcher m = (isDirs ? RE_LS_DIR : RE_LS_FILE).matcher(lsout.get(i));
+            if (!m.matches()) {
+                throw new Exception("Wrong ls line: " + lsout.get(i));
+            }
+            p.owner = m.group(2);
+            p.group = m.group(3);
+            p.perm = calcPermByLs(m.group(1));
+            if (isDirs) {
+                p.fileName = m.group(6);
+            } else {
+                p.fileSize = Integer.parseInt(m.group(4));
+                p.fileName = m.group(7);
+            }
+            int pp = p.file.lastIndexOf('/');
+            if (!p.fileName.equals(p.file.substring(pp + 1))) {
+                throw new Exception("Wrong file name in ls line: " + lsout.get(i));
+            }
+            result.add(p);
+        }
+        return result;
+    }
+
+    static final Map<String, Character> ls2p;
+    static {
+        ls2p = new HashMap<String, Character>();
+        ls2p.put("---", '0');
+        ls2p.put("--x", '1');
+        ls2p.put("-w-", '2');
+        ls2p.put("-wx", '3');
+        ls2p.put("r--", '4');
+        ls2p.put("r-x", '5');
+        ls2p.put("rw-", '6');
+        ls2p.put("rwx", '7');
+    }
+
+    private String calcPermByLs(String ls) throws Exception {
+        if (ls.length() != 9) {
+            throw new Exception("Wrong ls perm: " + ls);
+        }
+        String result = "";
+        Character r;
+        for (int i = 0; i < 9; i += 3) {
+            r = ls2p.get(ls.substring(i, i + 3));
+            if (r == null) {
+                throw new Exception("Wrong ls perm: " + ls);
+            }
+            result += r;
+        }
+        return result;
+    }
+
     public void backupList() throws Exception {
         final List<String> output = new ArrayList<String>();
+
+        output.add("## mount");
+        new ExecProcess("mount") {
+            @Override
+            protected void processOutputLine(String line) {
+                output.add(line);
+            }
+        }.exec();
+
         output.add("## ls -l " + APP_DIR.getPath());
         new ExecProcess("su") {
             @Override
@@ -139,6 +298,7 @@ public class LocalStorage {
 
         File outFile = new File(BACKUP_DIR + "ls" + new SimpleDateFormat(DATETIME_PATTERN).format(new Date())
                 + ".txt");
+        outFile.getParentFile().mkdirs();
         Utils.writeLines(outFile, output);
     }
 
@@ -184,55 +344,51 @@ public class LocalStorage {
         }
     }
 
-    public void remountSystem(final boolean allowWrite) throws Exception {
-        final StringBuilder systemDevice = new StringBuilder();
-
-        BufferedReader rd = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/mounts"),
-                "UTF-8"), 8192);
-        String s;
-        while ((s = rd.readLine()) != null) {
-            String[] a = s.split("\\s+");
-            if (a[1].equals("/system")) {
-                systemDevice.append(a[0]);
-            }
-        }
-        rd.close();
-
-        if (systemDevice.length() == 0) {
-            throw new Exception("/system partition not found for remount");
-        }
-
+    public void remountRW(List<LocalStorage.FilePerm> origDirsPerms,
+            List<LocalStorage.FilePerm> origFilesPerms) throws Exception {
         String sucmd = "";
-        if (allowWrite) {
-            sucmd += "mount -o remount,rw " + systemDevice + " /system\n";
-            sucmd += "chmod 777 /system/app/\n";
-            sucmd += "chmod 777 /system/framework/\n";
-            sucmd += "chmod 777 /data /data/app/\n";
-        } else {
-            sucmd += "chown root /system/app/*.apk\n";
-            sucmd += "chmod 755 /system/app\n";
-            sucmd += "chown root /system/framework/*.apk\n";
-            sucmd += "chmod 755 /system/framework\n";
-            sucmd += "mount -o remount,ro " + systemDevice + " /system\n";
-            sucmd += "chmod 771 /data /data/app/\n";
-            sucmd += "chmod 644 /data/app/*.apk\n";
+        sucmd += "mount -o remount,rw" + systemMountOptions + " " + systemMountDevice + " /system\n";
+        for (FilePerm p : origDirsPerms) {
+            sucmd += "chmod 777 '" + p.file + "'\n";
         }
+
+        try {
+            new ExecProcess("su").exec(sucmd);
+        } catch (Exception ex) {
+            throw new Exception("Error execute su: " + ex.getMessage());
+        }
+    }
+
+    public void remountRO(List<LocalStorage.FilePerm> origDirsPerms,
+            List<LocalStorage.FilePerm> origFilesPerms) throws Exception {
+        String sucmd = "";
+
+        for (FilePerm p : origDirsPerms) {
+            sucmd += "chmod " + p.perm + " '" + p.file + "'\n";
+            sucmd += "chown " + p.owner + "." + p.group + " '" + p.file + "'\n";
+        }
+        for (FilePerm p : origFilesPerms) {
+            sucmd += "chmod " + p.perm + " '" + p.file + "'\n";
+            sucmd += "chown " + p.owner + "." + p.group + " '" + p.file + "'\n";
+        }
+        sucmd += "mount -o remount,ro" + systemMountOptions + " " + systemMountDevice + " /system\n";
+
+        exec10su(sucmd);
+    }
+
+    private void exec10su(String cmd) throws Exception {
         int tries = 0;
         while (true) {
             try {
-                new ExecProcess("su").exec(sucmd);
+                new ExecProcess("su").exec(cmd);
                 break;
             } catch (Exception ex) {
-                if (allowWrite) {
-                    throw new Exception("Error execute su: " + ex.getMessage());
-                } else {
-                    tries++;
-                    if (tries < 10) {
-                        Thread.sleep(2000);
-                        continue;
-                    }
-                    throw new Exception("Error execute su: " + ex.getMessage());
+                tries++;
+                if (tries < 10) {
+                    Thread.sleep(2000);
+                    continue;
                 }
+                throw new Exception("Error execute su: " + ex.getMessage());
             }
         }
     }
@@ -258,4 +414,12 @@ public class LocalStorage {
             return pathname.isFile() && pathname.getName().endsWith(".apk.new");
         }
     };
+
+    static class FilePerm {
+        String file;
+        String perm;
+        String owner, group;
+        int fileSize;
+        String fileName;
+    }
 }
