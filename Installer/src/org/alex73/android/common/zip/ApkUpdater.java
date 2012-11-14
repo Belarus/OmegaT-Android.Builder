@@ -20,7 +20,7 @@ public class ApkUpdater {
     static byte[] RESOURCES_NAME_OLD = "old_resu_.arsc".getBytes();
 
     static final String RESOURCES_NAME = "resources.arsc";
-    static final String MARK_NAME = "i18n.bel";
+    public static final String MARK_NAME = "i18n.bel";
 
     public void append(File apkFile, byte[] mark, byte[] newResources) throws Exception {
         ZipReader zip = new ZipReader(new RandomAccessFile(apkFile, "rw"));
@@ -176,12 +176,12 @@ public class ApkUpdater {
             o.writeInt(0x04034b50);
             fData.writeFull(o);
 
-            // opos = o.pos();
-            // newOffsets.put(fMark.getFileName(), opos);
-            // fMark.calcExtraExtra(opos);
+             opos = o.pos();
+             newOffsets.put(fMark.getFileName(), opos);
+             fMark.calcExtraExtra(opos);
 
-            // o.writeInt(0x04034b50);
-            // fMark.writeFull(o);
+             o.writeInt(0x04034b50);
+             fMark.writeFull(o);
 
             end.offsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber = o.pos();
 

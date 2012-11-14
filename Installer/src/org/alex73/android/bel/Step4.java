@@ -97,6 +97,7 @@ public class Step4 extends Step {
         setProgressTotal(files.size());
         showOperation(R.string.opInstall);
         showFile("");
+        local.backupList();
         local.remountSystem(true);
         // translate
         for (FileInfo fi : files) {
@@ -107,7 +108,9 @@ public class Step4 extends Step {
             phase = "захоўвалі рэзэрвовую копію " + fi.localFile.getName();
             showFile(fi.localFile.getName());
             showOperation(R.string.opInstallTranslation);
-            local.backupApk(fi.localFile);
+            if (!local.isFileTranslated(fi.localFile)) {
+                local.backupApk(fi.localFile);
+            }
 
             phase = "перакладалі " + fi.localFile.getName();
             translateApk(fi);

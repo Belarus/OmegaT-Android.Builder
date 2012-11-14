@@ -15,6 +15,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import org.alex73.android.common.FileInfo;
 import org.alex73.android.common.zip.ApkUpdater;
@@ -117,9 +119,34 @@ public class LocalStorage {
         return new StatFs(BACKUP_PARTITION);
     }
 
+    public void backupList() throws Exception {
+        final List<String> output = new ArrayList<String>();
+        output.add("## ls -l " + APP_DIR.getPath());
+        new ExecProcess("su") {
+            @Override
+            protected void processOutputLine(String line) {
+                output.add(line);
+            }
+        }.exec("ls -l " + APP_DIR.getPath());
+
+        output.add("## ls -l " + USER_DIR.getPath());
+        new ExecProcess("su") {
+            @Override
+            protected void processOutputLine(String line) {
+                output.add(line);
+            }
+        }.exec("ls -l " + USER_DIR.getPath());
+
+        File outFile = new File(BACKUP_DIR + "ls" + new SimpleDateFormat(DATETIME_PATTERN).format(new Date())
+                + ".txt");
+        Utils.writeLines(outFile, output);
+    }
+
     public void backupApk(File f) throws Exception {
-        File outFile = new File(BACKUP_DIR + f.getName() + new SimpleDateFormat(DATETIME_PATTERN).format(new Date())
-                + ".bak");
+        // File outFile = new File(BACKUP_DIR + f.getName() + new
+        // SimpleDateFormat(DATETIME_PATTERN).format(new Date())
+        // + ".bak");
+        File outFile = new File(BACKUP_DIR + f.getName());
         outFile.getParentFile().mkdirs();
 
         FileOutputStream out = new FileOutputStream(outFile);
@@ -132,6 +159,16 @@ public class LocalStorage {
             }
         } finally {
             out.close();
+        }
+    }
+
+    public boolean isFileTranslated(File f) throws Exception {
+        ZipFile zip = new ZipFile(f);
+        try {
+            ZipEntry en = zip.getEntry(ApkUpdater.MARK_NAME);
+            return en != null;
+        } finally {
+            zip.close();
         }
     }
 
@@ -150,8 +187,8 @@ public class LocalStorage {
     public void remountSystem(final boolean allowWrite) throws Exception {
         final StringBuilder systemDevice = new StringBuilder();
 
-        BufferedReader rd = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/mounts"), "UTF-8"),
-                8192);
+        BufferedReader rd = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/mounts"),
+                "UTF-8"), 8192);
         String s;
         while ((s = rd.readLine()) != null) {
             String[] a = s.split("\\s+");

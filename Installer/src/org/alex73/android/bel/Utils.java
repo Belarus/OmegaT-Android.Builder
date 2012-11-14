@@ -1,13 +1,17 @@
 package org.alex73.android.bel;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -22,6 +26,17 @@ public class Utils {
                 break;
             }
             out.write(buffer, 0, sz);
+        }
+    }
+
+    public static void writeLines(File file, List<String> lines) throws IOException {
+        BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
+        try {
+            for (String s : lines) {
+                wr.write(s + "\n");
+            }
+        } finally {
+            wr.close();
         }
     }
 

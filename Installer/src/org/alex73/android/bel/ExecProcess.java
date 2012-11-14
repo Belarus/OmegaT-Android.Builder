@@ -16,39 +16,53 @@ public class ExecProcess {
     }
 
     public int exec(String cat) throws Exception {
-        Process process = new ProcessBuilder().command(command).start();
+        Process process = null;
+        OutputStream out = null;
+        BufferedReader rd = null;
+
         try {
+            process = new ProcessBuilder().command(command).start();
             if (cat != null) {
-                OutputStream out = process.getOutputStream();
-                out.write(cat.getBytes("UTF-8"));
-                out.flush();
-                out.close();
+                out = process.getOutputStream();
+                try {
+                    out.write(cat.getBytes("UTF-8"));
+                    out.flush();
+                } catch (Exception ex) {
+                }
+                if (out != null) {
+                    try {
+                        out.close();
+                    } catch (Throwable ex) {
+                    }
+                }
             }
             int status = process.waitFor();
             if (status == 0) {
-                BufferedReader rd = new BufferedReader(new InputStreamReader(process.getInputStream(),
-                        "UTF-8"), 8192);
-                try {
-                    String s;
-                    while ((s = rd.readLine()) != null) {
-                        processOutputLine(s);
-                    }
-                } finally {
-                    rd.close();
+                rd = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"), 8192);
+                String s;
+                while ((s = rd.readLine()) != null) {
+                    processOutputLine(s);
                 }
+                rd.close();
             } else {
-                BufferedReader rd = new BufferedReader(new InputStreamReader(process.getErrorStream(),
-                        "UTF-8"), 8192);
-                try {
-                    String s = rd.readLine();
-                    throw new Exception(s);
-                } finally {
-                    rd.close();
-                }
+                rd = new BufferedReader(new InputStreamReader(process.getErrorStream(), "UTF-8"), 8192);
+                String s = rd.readLine();
+                throw new Exception(s);
             }
             return status;
         } finally {
-            process.destroy();
+            if (process != null) {
+                try {
+                    process.destroy();
+                } catch (Throwable ex) {
+                }
+            }
+            if (rd != null) {
+                try {
+                    rd.close();
+                } catch (Throwable ex) {
+                }
+            }
         }
     }
 
