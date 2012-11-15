@@ -3,7 +3,6 @@ package org.alex73.android.arsc2.translation;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.InputStream;
-import java.util.zip.GZIPInputStream;
 
 import org.alex73.android.bel.R;
 import org.alex73.android.common.UTFUtils;
@@ -18,7 +17,7 @@ public class TranslationStoreDefaults {
     public TranslationStoreDefaults(Resources res) throws Exception {
         InputStream inTr = res.openRawResource(R.raw.translation);
         try {
-            DataInputStream data = new DataInputStream(new BufferedInputStream(new GZIPInputStream(inTr), 16384));
+            DataInputStream data = new DataInputStream(new BufferedInputStream(inTr, 16384));
 
             stringsCount = data.readInt();
             hash = new int[stringsCount];

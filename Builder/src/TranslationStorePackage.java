@@ -10,7 +10,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPOutputStream;
 
 import org.alex73.android.Assert;
 import org.alex73.android.StyledIdString;
@@ -35,8 +34,7 @@ public class TranslationStorePackage {
         if (outFile.exists()) {
             throw new Exception(outFile + " already exist");
         }
-        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(
-                outFile))));
+        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outFile)));
 
         SortedStyledStringMap list = new SortedStyledStringMap();
         for (Map.Entry<StyledIdString, StyledString> en : collected.entrySet()) {

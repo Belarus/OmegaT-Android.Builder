@@ -72,6 +72,9 @@ public class Step4 extends Step {
             }
         }
 
+        origDirsPerms = local.getDirsPermissions(files);
+        origFilesPerms = local.getFilesPermissions(files);
+
         StatFs freeStat = local.getFreeSpaceForBackups();
         int requiredBlocks = 0;
         int blockSize = freeStat.getBlockSize();
@@ -104,9 +107,6 @@ public class Step4 extends Step {
         showOperation(R.string.opInstall);
         showFile("");
         local.backupList();
-
-        origDirsPerms = local.getDirsPermissions(files);
-        origFilesPerms = local.getFilesPermissions(files);
 
         local.remountRW(origDirsPerms, origFilesPerms);
         // translate

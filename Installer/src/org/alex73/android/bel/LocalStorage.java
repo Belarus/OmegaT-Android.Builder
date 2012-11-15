@@ -10,19 +10,19 @@ import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.alex73.android.common.FileInfo;
+import org.alex73.android.common.JniWrapper;
 import org.alex73.android.common.zip.ApkUpdater;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -157,115 +157,52 @@ public class LocalStorage {
     }
 
     public List<FilePerm> getFilesPermissions(List<FileInfo> files) throws Exception {
-        List<String> filesList = new ArrayList<String>();
-        for (FileInfo fi : files) {
-            filesList.add(fi.localFile.getPath());
-        }
-        Collections.sort(filesList);
-
-        StringBuilder cmd = new StringBuilder("ls -l ");
-        for (String f : filesList) {
-            cmd.append('"').append(f).append('"').append(' ');
-        }
-        final List<String> ls = new ArrayList<String>();
-        new ExecProcess("su") {
-            @Override
-            protected void processOutputLine(String line) {
-                ls.add(line);
-            }
-        }.exec(cmd.toString());
-
-        return calcPermissions(filesList, ls, false);
-    }
-
-    public List<FilePerm> getDirsPermissions(List<FileInfo> files) throws Exception {
-        List<String> filesList = new ArrayList<String>();
-        for (FileInfo fi : files) {
-            String dir = fi.localFile.getParent();
-            if (!filesList.contains(dir)) {
-                filesList.add(dir);
-            }
-        }
-        Collections.sort(filesList);
-
-        StringBuilder cmd = new StringBuilder("ls -l -d ");
-        for (String f : filesList) {
-            cmd.append('"').append(f).append('"').append(' ');
-        }
-        final List<String> ls = new ArrayList<String>();
-        new ExecProcess("su") {
-            @Override
-            protected void processOutputLine(String line) {
-                ls.add(line);
-            }
-        }.exec(cmd.toString());
-
-        return calcPermissions(filesList, ls, true);
-    }
-
-    static final Pattern RE_LS_FILE = Pattern
-            .compile("\\-([rwx\\-]{9})\\s+([a-z0-9_]+)\\s+([a-z0-9_]+)\\s+([0-9]+)\\s+([0-9]{4}\\-[0-9]{2}\\-[0-9]{2})\\s+([0-9]{2}\\:[0-9]{2})\\s+(\\S+)");
-    static final Pattern RE_LS_DIR = Pattern
-            .compile("d([rwx\\-]{9})\\s+([a-z0-9_]+)\\s+([a-z0-9_]+)\\s+([0-9]{4}\\-[0-9]{2}\\-[0-9]{2})\\s+([0-9]{2}\\:[0-9]{2})\\s+(\\S+)");
-
-    private List<FilePerm> calcPermissions(List<String> filesList, List<String> lsout, boolean isDirs)
-            throws Exception {
-        if (filesList.size() != lsout.size()) {
-            throw new Exception("Wrong ls size");
-        }
-
         List<FilePerm> result = new ArrayList<FilePerm>();
-        for (int i = 0; i < filesList.size(); i++) {
+        for (FileInfo fi : files) {
             FilePerm p = new FilePerm();
-            p.file = filesList.get(i);
-            Matcher m = (isDirs ? RE_LS_DIR : RE_LS_FILE).matcher(lsout.get(i));
-            if (!m.matches()) {
-                throw new Exception("Wrong ls line: " + lsout.get(i));
-            }
-            p.owner = m.group(2);
-            p.group = m.group(3);
-            p.perm = calcPermByLs(m.group(1));
-            if (isDirs) {
-                p.fileName = m.group(6);
-            } else {
-                p.fileSize = Integer.parseInt(m.group(4));
-                p.fileName = m.group(7);
-            }
-            int pp = p.file.lastIndexOf('/');
-            if (!p.fileName.equals(p.file.substring(pp + 1))) {
-                throw new Exception("Wrong file name in ls line: " + lsout.get(i));
-            }
+            p.file = fi.localFile.getPath();
             result.add(p);
         }
+
+        for (FilePerm p : result) {
+            JniWrapper.getPermissions(p);
+            p.perm ^= 0100000;
+            if (p.perm < 0 || p.perm > 0777) {
+                throw new Exception("Invalid permission for " + p.file + ": " + Long.toString(p.perm, 8));
+            }
+        }
+
         return result;
     }
 
-    static final Map<String, Character> ls2p;
-    static {
-        ls2p = new HashMap<String, Character>();
-        ls2p.put("---", '0');
-        ls2p.put("--x", '1');
-        ls2p.put("-w-", '2');
-        ls2p.put("-wx", '3');
-        ls2p.put("r--", '4');
-        ls2p.put("r-x", '5');
-        ls2p.put("rw-", '6');
-        ls2p.put("rwx", '7');
-    }
-
-    private String calcPermByLs(String ls) throws Exception {
-        if (ls.length() != 9) {
-            throw new Exception("Wrong ls perm: " + ls);
-        }
-        String result = "";
-        Character r;
-        for (int i = 0; i < 9; i += 3) {
-            r = ls2p.get(ls.substring(i, i + 3));
-            if (r == null) {
-                throw new Exception("Wrong ls perm: " + ls);
+    public List<FilePerm> getDirsPermissions(List<FileInfo> files) throws Exception {
+        Set<String> dirs = new HashSet<String>();
+        List<FilePerm> result = new ArrayList<FilePerm>();
+        for (FileInfo fi : files) {
+            String dir = fi.localFile.getParent();
+            if (dirs.contains(dir)) {
+                continue;
             }
-            result += r;
+            dirs.add(dir);
+            FilePerm p = new FilePerm();
+            p.file = dir;
+            result.add(p);
         }
+
+        Collections.sort(result, new Comparator<FilePerm>() {
+            public int compare(FilePerm lhs, FilePerm rhs) {
+                return lhs.file.compareTo(rhs.file);
+            }
+        });
+
+        for (FilePerm p : result) {
+            JniWrapper.getPermissions(p);
+            p.perm ^= 0040000;
+            if (p.perm < 0 || p.perm > 0777) {
+                throw new Exception("Invalid permission for " + p.file + ": " + Long.toString(p.perm, 8));
+            }
+        }
+
         return result;
     }
 
@@ -364,11 +301,11 @@ public class LocalStorage {
         String sucmd = "";
 
         for (FilePerm p : origDirsPerms) {
-            sucmd += "chmod " + p.perm + " '" + p.file + "'\n";
+            sucmd += "chmod " + Long.toOctalString(p.perm) + " '" + p.file + "'\n";
             sucmd += "chown " + p.owner + "." + p.group + " '" + p.file + "'\n";
         }
         for (FilePerm p : origFilesPerms) {
-            sucmd += "chmod " + p.perm + " '" + p.file + "'\n";
+            sucmd += "chmod " + Long.toOctalString(p.perm) + " '" + p.file + "'\n";
             sucmd += "chown " + p.owner + "." + p.group + " '" + p.file + "'\n";
         }
         sucmd += "mount -o remount,ro" + systemMountOptions + " " + systemMountDevice + " /system\n";

@@ -9,7 +9,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPOutputStream;
 
 public class TranslationStoreDefaults {
     public static final Charset UTF8 = Charset.forName("UTF-8");
@@ -21,8 +20,8 @@ public class TranslationStoreDefaults {
     }
 
     public void save() throws Exception {
-        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(
-                new FileOutputStream("../Installer/res/raw/translation.bin"))));
+        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(
+                "../Installer/res/raw/translation.bin")));
 
         SortedStringMap list = new SortedStringMap();
         for (Map.Entry<String, String> en : defaults.entrySet()) {

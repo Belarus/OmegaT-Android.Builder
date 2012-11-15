@@ -4,7 +4,6 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.util.zip.GZIPInputStream;
 
 import org.alex73.android.StyledIdString;
 import org.alex73.android.StyledString;
@@ -26,8 +25,7 @@ public class TranslationStorePackage {
         }
         InputStream inTr = res.openRawResource(resID);
         try {
-            DataInputStream data = new DataInputStream(new BufferedInputStream(new GZIPInputStream(inTr),
-                    16384));
+            DataInputStream data = new DataInputStream(new BufferedInputStream(inTr, 16384));
 
             int plainStringsCount = data.readInt();
             plainStringOffsets = new int[plainStringsCount];
