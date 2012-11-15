@@ -415,11 +415,9 @@ public class LocalStorage {
         }
     };
 
-    static class FilePerm {
-        String file;
-        String perm;
-        String owner, group;
-        int fileSize;
-        String fileName;
+    public static class FilePerm {
+        public String file;
+        public long perm;
+        public long owner, group;
     }
 }
