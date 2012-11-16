@@ -2,7 +2,6 @@ package org.alex73.android.bel;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.List;
 
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -25,8 +24,6 @@ public abstract class Step extends Thread {
     protected RemoteSite remote = new RemoteSite();
 
     static LocalStorage local;
-    static List<LocalStorage.FilePerm> origDirsPerms;
-    static List<LocalStorage.FilePerm> origFilesPerms;
 
     public Step(AndroidBel activity) {
         this.ui = activity;

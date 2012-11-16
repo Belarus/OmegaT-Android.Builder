@@ -3,25 +3,26 @@ package org.alex73.android.bel;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ExecProcess {
-    private final String[] command;
+public class ExecSu {
 
-    public ExecProcess(String... command) {
-        this.command = command;
+    public static void execEvenFail(String cat) {
+        try {
+            exec(cat);
+        } catch (Exception ex) {
+        }
     }
 
-    public int exec() throws Exception {
-        return exec(null);
-    }
-
-    public int exec(String cat) throws Exception {
+    public static List<String> exec(String cat) throws Exception {
         Process process = null;
         OutputStream out = null;
         BufferedReader rd = null;
 
+        List<String> result;
         try {
-            process = new ProcessBuilder().command(command).start();
+            process = new ProcessBuilder().command("su").start();
             if (cat != null) {
                 out = process.getOutputStream();
                 try {
@@ -38,10 +39,11 @@ public class ExecProcess {
             }
             int status = process.waitFor();
             if (status == 0) {
+                result = new ArrayList<String>();
                 rd = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"), 8192);
                 String s;
                 while ((s = rd.readLine()) != null) {
-                    processOutputLine(s);
+                    result.add(s);
                 }
                 rd.close();
             } else {
@@ -49,7 +51,7 @@ public class ExecProcess {
                 String s = rd.readLine();
                 throw new Exception(s);
             }
-            return status;
+            return result;
         } finally {
             if (process != null) {
                 try {
@@ -64,8 +66,5 @@ public class ExecProcess {
                 }
             }
         }
-    }
-
-    protected void processOutputLine(String line) {
     }
 }

@@ -14,6 +14,7 @@
     <string name="opUploadTrans">Зацягваем неперакладзенае...</string>
 	<string name="opDownload">Сцягваем...</string>
 	<string name="opInstall">Усталёўваем...</string>
+	<string name="opTranslate">Перакладаем...</string>
 	<string name="opInstallTranslation">Усталёўваем пераклад...</string>
 	<string name="opSetup">Зьмяняем моўныя налады...</string>
 	<string name="opRead">Чытаем...</string>

@@ -12,6 +12,7 @@ import org.alex73.android.arsc2.Translation;
 import org.alex73.android.arsc2.reader.ChunkReader2;
 import org.alex73.android.arsc2.translation.TranslationStoreDefaults;
 import org.alex73.android.arsc2.translation.TranslationStorePackage;
+import org.alex73.android.bel.LocalStorage.Permissions;
 import org.alex73.android.common.FileInfo;
 import org.alex73.android.common.JniWrapper;
 
@@ -54,11 +55,6 @@ public class Step4 extends Step {
         local = new LocalStorage();
 
         List<FileInfo> files = local.getLocalFiles();
-        // delete .new files
-        List<File> filesOldNew = local.getLocalFilesNew(files);
-        for (File f : filesOldNew) {
-            f.delete();
-        }
 
         // remove non-translatable apk from list
         for (Iterator<FileInfo> it = files.iterator(); it.hasNext();) {
@@ -71,9 +67,6 @@ public class Step4 extends Step {
                 return;
             }
         }
-
-        origDirsPerms = local.getDirsPermissions(files);
-        origFilesPerms = local.getFilesPermissions(files);
 
         StatFs freeStat = local.getFreeSpaceForBackups();
         int requiredBlocks = 0;
@@ -108,41 +101,33 @@ public class Step4 extends Step {
         showFile("");
         local.backupList();
 
-        local.remountRW(origDirsPerms, origFilesPerms);
         // translate
-        for (FileInfo fi : files) {
+        for (final FileInfo fi : files) {
             if (stopped) {
                 return;
             }
             incProgress();
-            phase = "захоўвалі рэзэрвовую копію " + fi.localFile.getName();
-            showFile(fi.localFile.getName());
-            showOperation(R.string.opInstallTranslation);
+            phase = "захоўвалі рэзэрвовую копію " + fi.localFile.getPath();
+            showFile(fi.packageName);
+            showOperation(R.string.opTranslate);
+
             if (!local.isFileTranslated(fi.localFile)) {
-                local.backupApk(fi.localFile);
+                local.backupApk(fi);
             }
 
-            phase = "перакладалі " + fi.localFile.getName();
+            phase = "перакладалі " + fi.localFile.getPath();
             translateApk(fi, local);
             phase = "";
             if (stopped) {
                 return;
             }
 
-            final File ff = fi.localFile;
             ui.runOnUiThread(new Runnable() {
                 public void run() {
-                    textLog.setText(ff.getName() + " перакладзены\n" + textLog.getText());
+                    textLog.setText(fi.packageName + " перакладзены\n" + textLog.getText());
                 }
             });
         }
-        try {
-            local.remountRO(origDirsPerms, origFilesPerms);
-        } catch (Exception ex) {
-            // hide remount exception
-        }
-        origDirsPerms = null;
-        origFilesPerms = null;
         local = null;
 
         if (stopped) {
@@ -211,6 +196,28 @@ public class Step4 extends Step {
         if (stopped) {
             return;
         }
-        local.patchFile(fi.localFile, translatedResources);
+
+        File f = local.patchFileToTemp(fi.localFile, translatedResources);
+
+        if (!local.isFilesEquals(f, fi.localFile)) {
+            showOperation(R.string.opInstallTranslation);
+            long free = JniWrapper.getSpaceNearFile(fi.localFile);
+            long requiredAdditional = f.length() - fi.localFile.length();
+            if (free < requiredAdditional + 16 * 1024) {
+                throw new Exception("There is no space to overwrite " + fi.localFile.getPath());
+            }
+
+            Permissions p = local.getPermissions(fi);
+            local.openFileAccess(p);
+            try {
+                if (p.mountedUid) {
+                    local.moveToOriginalUid(f, fi.localFile, p);
+                } else {
+                    local.moveToOriginal(f, fi.localFile, p);
+                }
+            } finally {
+                local.closeFileAccess(p);
+            }
+        }
     }
 }

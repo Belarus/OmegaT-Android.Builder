@@ -10,10 +10,18 @@ extern "C" {
 /*
  * Class:     org_alex73_android_common_JniWrapper
  * Method:    getPermissions
- * Signature: (Lorg/alex73/android/bel/LocalStorage/FilePerm;)V
+ * Signature: (Lorg/alex73/android/common/FilePerm;)V
  */
 JNIEXPORT void JNICALL Java_org_alex73_android_common_JniWrapper_getPermissions
   (JNIEnv *, jclass, jobject);
+
+/*
+ * Class:     org_alex73_android_common_JniWrapper
+ * Method:    getSpaceNearFile
+ * Signature: (Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_alex73_android_common_JniWrapper_getSpaceNearFile
+  (JNIEnv *, jclass, jstring);
 
 #ifdef __cplusplus
 }

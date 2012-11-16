@@ -32,8 +32,7 @@ public class FileInfo {
     }
 
     public String store() throws IOException {
-        return "v2: origApkSha1=" + originID + " transARSCSha1="
-                + (translatedID != null ? translatedID : "0");
+        return "v2: origApkSha1=" + originID + " transARSCSha1=" + (translatedID != null ? translatedID : "0");
     }
 
     public void readManifestInfo() throws Exception {

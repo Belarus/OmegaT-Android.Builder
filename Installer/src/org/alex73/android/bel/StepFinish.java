@@ -14,17 +14,6 @@ public class StepFinish extends Step {
         this.text = text;
     }
 
-    protected void process() throws Exception {
-        if (local != null && origDirsPerms != null && origFilesPerms != null) {
-            try {
-                local.remountRO(origDirsPerms, origFilesPerms);
-            } catch (Exception ex) {
-                // hide remount exception
-            }
-            local = null;
-        }
-    }
-
     protected void show() {
         phase = "stepFinish";
         ui.setContentView(R.layout.step5);

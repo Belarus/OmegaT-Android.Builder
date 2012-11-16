@@ -19,7 +19,7 @@ import java.util.zip.ZipFile;
 public class Utils {
 
     public static void copy(InputStream in, OutputStream out) throws IOException {
-        byte[] buffer = new byte[8192];
+        byte[] buffer = new byte[32768];
         while (true) {
             int sz = in.read(buffer);
             if (sz < 0) {

@@ -126,24 +126,25 @@ public final class R {
         public static final int btnSelectAll=0x7f050005;
         public static final int btnStop=0x7f050002;
         public static final int btnStopping=0x7f050003;
-        public static final int msgRoot=0x7f050017;
+        public static final int msgRoot=0x7f050018;
         public static final int opCheckInstalled=0x7f050007;
         public static final int opCheckNew=0x7f050009;
         public static final int opDownload=0x7f05000c;
         public static final int opDownloadTrans=0x7f05000a;
         public static final int opInstall=0x7f05000d;
-        public static final int opInstallTranslation=0x7f05000e;
-        public static final int opRead=0x7f050010;
+        public static final int opInstallTranslation=0x7f05000f;
+        public static final int opRead=0x7f050011;
         public static final int opReadTranslation=0x7f050008;
-        public static final int opSetup=0x7f05000f;
+        public static final int opSetup=0x7f050010;
+        public static final int opTranslate=0x7f05000e;
         public static final int opUploadTrans=0x7f05000b;
-        public static final int textDownloadSize=0x7f050015;
-        public static final int textError=0x7f050013;
-        public static final int textFinished=0x7f050014;
-        public static final int textIntro=0x7f050011;
-        public static final int textLabel3=0x7f050018;
-        public static final int textNoSpace=0x7f050019;
-        public static final int textStopped=0x7f050012;
-        public static final int textUploadSize=0x7f050016;
+        public static final int textDownloadSize=0x7f050016;
+        public static final int textError=0x7f050014;
+        public static final int textFinished=0x7f050015;
+        public static final int textIntro=0x7f050012;
+        public static final int textLabel3=0x7f050019;
+        public static final int textNoSpace=0x7f05001a;
+        public static final int textStopped=0x7f050013;
+        public static final int textUploadSize=0x7f050017;
     }
 }
