@@ -1,13 +1,16 @@
 package org.alex73.android.bel;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.MessageDigest;
@@ -53,6 +56,28 @@ public class Utils {
         go.flush();
         go.close();
         return o.toByteArray();
+    }
+
+    public static void readAndClose(InputStream in, List<String> result, String prefix) throws IOException {
+        BufferedReader rd = null;
+        try {
+            rd=new BufferedReader(new InputStreamReader(in, "UTF-8"), 8192);
+            String s;
+            while ((s = rd.readLine()) != null) {
+                result.add(prefix+s);
+            }
+        } finally {
+            Utils.mustClose(rd);
+        }
+    }
+
+    public static void mustClose(Closeable in) {
+        if (in != null) {
+            try {
+                in.close();
+            } catch (IOException ex) {
+            }
+        }
     }
 
     /**
@@ -120,7 +145,7 @@ public class Utils {
         return s.toString();
     }
 
-    public static String textSize(int size) {
+    public static String textSize(long size) {
         if (size > 4 * 1024 * 1024) {
             return size / 1024 / 1024 + "MiB";
         } else if (size > 4 * 1024) {

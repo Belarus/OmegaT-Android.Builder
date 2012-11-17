@@ -81,7 +81,7 @@ public class ResourceProcessor {
         translate(packageName, translation);
     }
 
-    public byte[] save() {
+    public ChunkWriter2 save() {
         ChunkWriter2 wr = new ChunkWriter2(ChunkHeader2.TYPE_TABLE, ChunkHeader2.TYPE2_TABLE);
 
         wr.writeInt(packages.length);
@@ -98,7 +98,7 @@ public class ResourceProcessor {
         // wr.writeInt(-1);
         wr.close();
 
-        return wr.getBytes();
+        return wr;
     }
 
     private void removeUnusedStrings() {

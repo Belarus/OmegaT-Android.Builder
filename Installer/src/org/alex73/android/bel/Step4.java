@@ -2,6 +2,7 @@ package org.alex73.android.bel;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -12,6 +13,7 @@ import org.alex73.android.arsc2.Translation;
 import org.alex73.android.arsc2.reader.ChunkReader2;
 import org.alex73.android.arsc2.translation.TranslationStoreDefaults;
 import org.alex73.android.arsc2.translation.TranslationStorePackage;
+import org.alex73.android.arsc2.writer.ChunkWriter2;
 import org.alex73.android.bel.LocalStorage.Permissions;
 import org.alex73.android.common.FileInfo;
 import org.alex73.android.common.JniWrapper;
@@ -99,7 +101,6 @@ public class Step4 extends Step {
         setProgressTotal(files.size());
         showOperation(R.string.opInstall);
         showFile("");
-        local.backupList();
 
         // translate
         for (final FileInfo fi : files) {
@@ -191,7 +192,10 @@ public class Step4 extends Step {
             return;
         }
 
-        byte[] translatedResources = rs.save();
+        ChunkWriter2 res = rs.save();
+        rs = null;
+        byte[] translatedResources = res.getBytes();
+        res = null;
 
         if (stopped) {
             return;

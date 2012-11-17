@@ -1,7 +1,6 @@
 package org.alex73.android.bel;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -10,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class LocalStorage {
                 mounts.add(s.split("\\s+"));
             }
         } finally {
-            mustClose(rd);
+            Utils.mustClose(rd);
         }
     }
 
@@ -160,8 +160,8 @@ public class LocalStorage {
             Utils.copy(in, out);
             out.flush();
         } finally {
-            mustClose(in);
-            mustClose(out);
+            Utils.mustClose(in);
+            Utils.mustClose(out);
         }
     }
 
@@ -188,19 +188,10 @@ public class LocalStorage {
                 leave -= partSize;
             }
         } finally {
-            mustClose(in1);
-            mustClose(in2);
+            Utils.mustClose(in1);
+            Utils.mustClose(in2);
         }
         return equals;
-    }
-
-    private void mustClose(Closeable in) {
-        if (in != null) {
-            try {
-                in.close();
-            } catch (IOException ex) {
-            }
-        }
     }
 
     public StatFs getFreeSpaceForBackups() throws Exception {
@@ -256,25 +247,27 @@ public class LocalStorage {
         return p;
     }
 
-    public void backupList() throws Exception {
+    private void storeInfo() throws Exception {
         final List<String> output = new ArrayList<String>();
 
         output.add("## mount");
-        output.addAll(ExecSu.exec("mount"));
+        output.addAll(ExecSu.execEvenFail("mount"));
 
         output.add("## df");
-        output.addAll(ExecSu.exec("df"));
+        output.addAll(ExecSu.execEvenFail("df"));
 
         output.add("## ls -l /system/app/");
-        output.addAll(ExecSu.exec("ls -l /system/app/"));
+        output.addAll(ExecSu.execEvenFail("ls -l /system/app/"));
 
         output.add("## ls -l /system/framework/");
-        output.addAll(ExecSu.exec("ls -l /system/framework/"));
+        output.addAll(ExecSu.execEvenFail("ls -l /system/framework/"));
 
         output.add("## ls -l /data/app/");
-        output.addAll(ExecSu.exec("ls -l /data/app/"));
+        output.addAll(ExecSu.execEvenFail("ls -l /data/app/"));
 
-        File outFile = new File(BACKUP_DIR + "ls" + new SimpleDateFormat(DATETIME_PATTERN).format(new Date()) + ".txt");
+        output.add("## maxMemory: " + Utils.textSize(Runtime.getRuntime().maxMemory()));
+
+        File outFile = new File(BACKUP_DIR + "log" + new SimpleDateFormat(DATETIME_PATTERN).format(new Date()) + ".txt");
         outFile.getParentFile().mkdirs();
         Utils.writeLines(outFile, output);
     }
@@ -311,7 +304,8 @@ public class LocalStorage {
      */
     public boolean checkSu() {
         try {
-            ExecSu.exec("mount");
+            storeInfo();
+            ExecSu.exec("echo 0");
             return true;
         } catch (Exception ex) {
             return false;
