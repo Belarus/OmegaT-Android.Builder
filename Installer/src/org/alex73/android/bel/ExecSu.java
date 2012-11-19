@@ -1,11 +1,11 @@
 package org.alex73.android.bel;
 
 import java.io.File;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ExecSu {
+    static final File SH_FILE = new File(LocalStorage.OUR_DIR, "command");
 
     public static List<String> execEvenFail(String input) throws Exception {
         return exec(input, false);
@@ -19,7 +19,8 @@ public class ExecSu {
         Process process = null;
 
         try {
-            process = new ProcessBuilder().command("su", "-c", "cat '" + file.getPath() + "'").start();
+            Utils.writeString(SH_FILE, "cat '" + file.getPath() + "'");
+            process = new ProcessBuilder().command("su", "-c", "sh '" + SH_FILE.getPath() + "'").start();
             List<String> result = new ArrayList<String>();
             byte[] r = Utils.readBytesAndClose(process.getInputStream());
             int status = process.waitFor();
@@ -47,7 +48,8 @@ public class ExecSu {
         Process process = null;
 
         try {
-            process = new ProcessBuilder().command("su","-c",input).start();
+            Utils.writeString(SH_FILE, input);
+            process = new ProcessBuilder().command("su", "-c", "sh '" + SH_FILE.getPath() + "'").start();
 //            if (input != null) {
 //                OutputStream out = null;
 //                try {

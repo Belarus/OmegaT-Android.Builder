@@ -33,7 +33,7 @@ import android.control.App;
 import android.control.Translation;
 
 public class PackTranslation {
-    static String projectPath = "../../Android.OmegaT/Android/";
+    static String projectPath = "../../Android.OmegaT/";
 
     static final Charset UTF8 = Charset.forName("UTF-8");
     static int countDefault, countTranslations;
@@ -49,7 +49,7 @@ public class PackTranslation {
     static Map<CharSequence, Integer> outstrpos = new HashMap<CharSequence, Integer>();
 
     public static void main(String[] args) throws Exception {
-        RuntimePreferences.setConfigDir("../../Android.OmegaT/Android.settings/");
+        //RuntimePreferences.setConfigDir("../../Android.OmegaT/Android.settings/");
         Map<String, String> params = new TreeMap<String, String>();
         params.put("alternate-filename-from", "/.+.xml$");
         params.put("alternate-filename-to", "/");
@@ -66,7 +66,7 @@ public class PackTranslation {
         }
 
         ProjectProperties props = ProjectFileStorage.loadProjectProperties(new File(
-                "../../Android.OmegaT/Android/"));
+                "../../Android.OmegaT/"));
         RealProject project = new RealProject(props);
         project.loadProject();
         project.compileProject(".*");
@@ -75,7 +75,7 @@ public class PackTranslation {
 
         JAXBContext ctx = JAXBContext.newInstance(Translation.class);
         Translation translationInfo = (Translation) ctx.createUnmarshaller().unmarshal(
-                new File(projectPath + "../translation.xml"));
+                new File(projectPath + "translation.xml"));
 
         for (App app : translationInfo.getApp()) {
             packages.add(app.getPackageName());

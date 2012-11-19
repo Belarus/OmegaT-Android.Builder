@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
@@ -40,6 +41,15 @@ public class Utils {
             }
         } finally {
             wr.close();
+        }
+    }
+
+    public static void writeString(File file, String line) throws IOException {
+        Writer wr = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
+        try {
+            wr.write(line);
+        } finally {
+            mustClose(wr);
         }
     }
 
