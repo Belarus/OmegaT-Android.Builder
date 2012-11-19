@@ -125,7 +125,7 @@ public class Tests {
     public static byte[] recreateFull(byte[] data) {
         ChunkReader2 rsReader = new ChunkReader2(new ByteArrayInputStream(data));
         ResourceProcessor rs = new ResourceProcessor(rsReader, null);
-        return rs.save();
+        return rs.save().getBytes();
     }
 
     public static byte[] recreatePackage(byte[] data, int packageIndex) {

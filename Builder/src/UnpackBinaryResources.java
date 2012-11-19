@@ -35,7 +35,7 @@ import android.control.Translation;
  * Imports binary resources. arg0 is binaries .zips dir
  */
 public class UnpackBinaryResources {
-    static String projectPath = "../../Android.OmegaT/Android/";
+    static String projectPath = "../../Android.OmegaT/";
     static File[] zips;
 
     static List<FileInfo> fileNames = new ArrayList<FileInfo>();
@@ -113,7 +113,7 @@ public class UnpackBinaryResources {
         new StAXEncoder().dump(rs, out, suffixVersion);
 
         // зыходныя рэсурсы захаваныя наноў - для параўняньня
-        byte[] rsWriterOriginal = rs.save();
+        byte[] rsWriterOriginal = rs.save().getBytes();
 
         if (!Arrays.equals(arsc, rsWriterOriginal)) {
             FileUtils.writeByteArrayToFile(new File("/tmp/st-orig"), arsc);
@@ -150,7 +150,7 @@ public class UnpackBinaryResources {
     static Translation readTranslationInfo() throws Exception {
         JAXBContext ctx = JAXBContext.newInstance(Translation.class);
         Translation result = (Translation) ctx.createUnmarshaller().unmarshal(
-                new File(projectPath + "../translation.xml"));
+                new File(projectPath, "translation.xml"));
 
         Set<String> uniqueApps = new HashSet<String>();
         Set<String> uniquePackages = new HashSet<String>();

@@ -9,7 +9,10 @@
 		<Button android:id="@+id/btnNext5" android:layout_height="wrap_content"
 			android:layout_width="wrap_content" android:layout_alignParentRight="true"
 			android:text="@string/btnFinish" />
-
+		<Button
+		    android:id="@+id/btnReboot" android:layout_height="wrap_content"
+		    android:layout_width="wrap_content" android:layout_alignParentLeft="true"
+		    android:text="@string/btnReboot" />
 	</RelativeLayout>
 
 	<TextView android:layout_height="fill_parent"

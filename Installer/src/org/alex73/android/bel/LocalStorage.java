@@ -1,6 +1,7 @@
 package org.alex73.android.bel;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -9,7 +10,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +68,8 @@ public class LocalStorage {
 
     public List<FileInfo> getLocalFiles() throws Exception {
         final List<FileInfo> files = new ArrayList<FileInfo>();
-        InputStream in = new FileInputStream(new File("/data/system/packages.xml"));
+        byte[] packagesXml = ExecSu.cat(new File("/data/system/packages.xml"));
+        InputStream in = new ByteArrayInputStream(packagesXml);
         try {
             Xml.parse(in, Xml.Encoding.UTF_8, new DefaultHandler() {
                 public void startElement(String uri, String localName, String qName, Attributes attributes)

@@ -7,6 +7,7 @@
 	<string name="btnFinish">Скончыць</string>
 	<string name="btnSelectAll">Усё</string>
 	<string name="btnDeselectAll">Нічога</string>
+	<string name="btnReboot">Рэстартаваць</string>
 	<string name="opCheckInstalled">Вызначаемся што перакладаць...</string>
 	<string name="opReadTranslation">Чытаем пераклад...</string>
 	<string name="opCheckNew">Ці ёсьць новыя пераклады?..</string>

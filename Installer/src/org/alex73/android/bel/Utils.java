@@ -43,10 +43,14 @@ public class Utils {
         }
     }
 
-    public static byte[] read(InputStream in) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        copy(in, out);
-        return out.toByteArray();
+    public static byte[] readBytesAndClose(InputStream in) throws IOException {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            copy(in, out);
+            return out.toByteArray();
+        } finally {
+            Utils.mustClose(in);
+        }
     }
 
     public static byte[] gzip(byte[] data) throws IOException {
@@ -58,13 +62,13 @@ public class Utils {
         return o.toByteArray();
     }
 
-    public static void readAndClose(InputStream in, List<String> result, String prefix) throws IOException {
+    public static void readLinesAndClose(InputStream in, List<String> result, String prefix) throws IOException {
         BufferedReader rd = null;
         try {
-            rd=new BufferedReader(new InputStreamReader(in, "UTF-8"), 8192);
+            rd = new BufferedReader(new InputStreamReader(in, "UTF-8"), 8192);
             String s;
             while ((s = rd.readLine()) != null) {
-                result.add(prefix+s);
+                result.add(prefix + s);
             }
         } finally {
             Utils.mustClose(rd);

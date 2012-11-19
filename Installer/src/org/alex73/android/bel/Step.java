@@ -42,7 +42,7 @@ public abstract class Step extends Thread {
             if (stopped) {
                 ui.runOnUiThread(new Runnable() {
                     public void run() {
-                        new StepFinish(ui, ui.getResources().getText(R.string.textStopped)).doit();
+                        new StepFinish(ui, ui.getResources().getText(R.string.textStopped), false).doit();
                     }
                 });
             }
@@ -52,8 +52,8 @@ public abstract class Step extends Thread {
             final String s = wr.toString();
             ui.runOnUiThread(new Runnable() {
                 public void run() {
-                    new StepFinish(ui, ui.getResources().getText(R.string.textError) + " (" + phase + "): "
-                            + s).doit();
+                    new StepFinish(ui, ui.getResources().getText(R.string.textError) + " (" + phase + "): " + s, false)
+                            .doit();
                 }
             });
         }

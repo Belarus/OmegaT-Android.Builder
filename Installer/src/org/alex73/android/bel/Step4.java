@@ -2,7 +2,6 @@ package org.alex73.android.bel;
 
 import java.io.File;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -87,7 +86,7 @@ public class Step4 extends Step {
             final String txtOut = txt;
             ui.runOnUiThread(new Runnable() {
                 public void run() {
-                    new StepFinish(ui, txtOut).doit();
+                    new StepFinish(ui, txtOut, false).doit();
                 }
             });
             return;
@@ -122,12 +121,6 @@ public class Step4 extends Step {
             if (stopped) {
                 return;
             }
-
-            ui.runOnUiThread(new Runnable() {
-                public void run() {
-                    textLog.setText(fi.packageName + " перакладзены\n" + textLog.getText());
-                }
-            });
         }
         local = null;
 
@@ -145,8 +138,8 @@ public class Step4 extends Step {
         ui.runOnUiThread(new Runnable() {
             public void run() {
                 String txt = ui.getResources().getText(R.string.textFinished).toString();
-                txt = txt.replace("$0", LocalStorage.BACKUP_DIR);
-                new StepFinish(ui, txt).doit();
+                txt = txt.replace("$0", new File(LocalStorage.BACKUP_DIR).getAbsolutePath());
+                new StepFinish(ui, txt, true).doit();
             }
         });
     }
@@ -155,7 +148,7 @@ public class Step4 extends Step {
         return TranslationStorePackage.isPackageTranslated(ui.getResources(), fi.packageName);
     }
 
-    void translateApk(FileInfo fi, LocalStorage local) throws Exception {
+    void translateApk(final FileInfo fi, LocalStorage local) throws Exception {
         if (stopped) {
             return;
         }
@@ -169,6 +162,9 @@ public class Step4 extends Step {
             ZipEntry en = zip.getEntry("resources.arsc");
 
             if (stopped) {
+                return;
+            }
+            if (en == null) {
                 return;
             }
             InputStream in = zip.getInputStream(en);
@@ -223,5 +219,10 @@ public class Step4 extends Step {
                 local.closeFileAccess(p);
             }
         }
+        ui.runOnUiThread(new Runnable() {
+            public void run() {
+                textLog.setText(fi.packageName + " перакладзены\n" + textLog.getText());
+            }
+        });
     }
 }

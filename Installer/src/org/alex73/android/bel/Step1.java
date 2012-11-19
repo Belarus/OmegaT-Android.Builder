@@ -26,7 +26,7 @@ public class Step1 extends Step {
         if (!rooted) {
             ui.runOnUiThread(new Runnable() {
                 public void run() {
-                    new StepFinish(ui, ui.getResources().getText(R.string.msgRoot)).doit();
+                    new StepFinish(ui, ui.getResources().getText(R.string.msgRoot), false).doit();
                 }
             });
         } else {
