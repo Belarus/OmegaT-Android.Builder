@@ -108,7 +108,11 @@ public class TranslationStorePackage {
                     } else if (o1.hash > o2.hash) {
                         return 1;
                     } else {
-                        return 0;
+                        int r = Short.compare(o1.idIndex, o2.idIndex);
+                        if (r == 0) {
+                            r = Short.compare(o1.sourceIndex, o2.sourceIndex);
+                        }
+                        return r;
                     }
                 }
             });

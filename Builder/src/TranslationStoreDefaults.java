@@ -61,7 +61,11 @@ public class TranslationStoreDefaults {
                     } else if (o1.hash > o2.hash) {
                         return 1;
                     } else {
-                        return 0;
+                        int r = o1.key.compareTo(o2.key);
+                        if (r == 0) {
+                            r = o1.value.compareTo(o2.value);
+                        }
+                        return r;
                     }
                 }
             });
