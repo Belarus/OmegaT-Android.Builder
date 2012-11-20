@@ -108,6 +108,7 @@ public class PackTranslation {
             Map<StyledIdString, StyledString> collected = new HashMap<StyledIdString, StyledString>();
             File[] fs = dir.listFiles();
             Assert.assertNotNull("There is no files", fs);
+            Arrays.sort(fs);
             for (File f : fs) {
                 readSourceAndTrans(f, new File(dirOut, f.getName()), collected, packageStore);
             }

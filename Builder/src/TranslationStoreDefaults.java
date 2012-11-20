@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.alex73.android.StyledIdString;
+import org.alex73.android.StyledString;
+
 public class TranslationStoreDefaults {
     public static final Charset UTF8 = Charset.forName("UTF-8");
 
@@ -23,9 +26,12 @@ public class TranslationStoreDefaults {
         DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(
                 "../Installer/res/raw/translation.bin")));
 
+        List<String> allCollected = new ArrayList<String>(defaults.keySet());
+        Collections.sort(allCollected);
+
         SortedStringMap list = new SortedStringMap();
-        for (Map.Entry<String, String> en : defaults.entrySet()) {
-            list.add(en.getKey(), en.getValue());
+        for (String ids : allCollected) {
+            list.add(ids, defaults.get(ids));
         }
 
         list.write(out);
@@ -89,4 +95,39 @@ public class TranslationStoreDefaults {
             out.write(text.toByteArray());
         }
     }
+
+    public static Comparator<StyledString> COMP_STYLED_STRING = new Comparator<StyledString>() {
+        public int compare(StyledString o1, StyledString o2) {
+            int r = o1.raw.compareTo(o2.raw);
+            if (r == 0) {
+                r = Integer.compare(o1.tags.length, o2.tags.length);
+            }
+            if (r == 0) {
+                for (int i = 0; i < o1.tags.length; i++) {
+                    StyledString.Tag t1 = o1.tags[i];
+                    StyledString.Tag t2 = o2.tags[i];
+                    if (r == 0) {
+                        r = t1.tagName.compareTo(t2.tagName);
+                    }
+                    if (r == 0) {
+                        r = Integer.compare(t1.start, t2.start);
+                    }
+                    if (r == 0) {
+                        r = Integer.compare(t1.end, t2.end);
+                    }
+                }
+            }
+            return r;
+        }
+    };
+
+    public static Comparator<StyledIdString> COMP_STYLED_ID_STRING = new Comparator<StyledIdString>() {
+        public int compare(StyledIdString o1, StyledIdString o2) {
+            int r = o1.id.compareTo(o2.id);
+            if (r == 0) {
+                r = COMP_STYLED_STRING.compare(o1, o2);
+            }
+            return r;
+        }
+    };
 }

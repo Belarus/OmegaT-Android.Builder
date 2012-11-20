@@ -36,9 +36,12 @@ public class TranslationStorePackage {
         }
         DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outFile)));
 
+        List<StyledIdString> allCollected = new ArrayList<StyledIdString>(collected.keySet());
+        Collections.sort(allCollected, TranslationStoreDefaults.COMP_STYLED_ID_STRING);
+
         SortedStyledStringMap list = new SortedStyledStringMap();
-        for (Map.Entry<StyledIdString, StyledString> en : collected.entrySet()) {
-            list.addTranslation(en.getKey(), en.getValue());
+        for (StyledIdString ids : allCollected) {
+            list.addTranslation(ids, collected.get(ids));
         }
 
         list.write(out);
