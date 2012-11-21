@@ -19,18 +19,22 @@ public class ExecSu {
         Process process = null;
 
         try {
+            MyLog.log("## ExecSu.cat: " + file.getPath());
             Utils.writeString(SH_FILE, "cat '" + file.getPath() + "'");
             process = new ProcessBuilder().command("su", "-c", "sh '" + SH_FILE.getPath() + "'").start();
             List<String> result = new ArrayList<String>();
             byte[] r = Utils.readBytesAndClose(process.getInputStream());
             int status = process.waitFor();
             if (status == 0) {
+                MyLog.log("## ExecSu.cat: OK");
                 return r;
             } else {
                 Utils.readLinesAndClose(process.getErrorStream(), result, "");
                 if (result.isEmpty()) {
+                    MyLog.log("## ExecSu.cat: ERROR");
                     throw new Exception("Error execute su");
                 } else {
+                    MyLog.log("## ExecSu.cat: ERROR: " + result.get(0));
                     throw new Exception("Error execute su: " + result.get(0));
                 }
             }
@@ -48,6 +52,7 @@ public class ExecSu {
         Process process = null;
 
         try {
+            MyLog.log("## ExecSu.exec: " + input);
             Utils.writeString(SH_FILE, input);
             process = new ProcessBuilder().command("su", "-c", "sh '" + SH_FILE.getPath() + "'").start();
 //            if (input != null) {
@@ -64,14 +69,18 @@ public class ExecSu {
             Utils.readLinesAndClose(process.getInputStream(), result, "");
             int status = process.waitFor();
             if (status == 0) {
+                MyLog.log("## ExecSu.exec: OK");
             } else if (throwError) {
                 Utils.readLinesAndClose(process.getErrorStream(), result, "");
                 if (result.isEmpty()) {
+                    MyLog.log("## ExecSu.exec: ERROR");
                     throw new Exception("Error execute su");
                 } else {
+                    MyLog.log("## ExecSu.exec: ERROR: " + result.get(0));
                     throw new Exception("Error execute su: " + result.get(0));
                 }
             } else {
+                MyLog.log("## ExecSu.exec: ERROR_HIDE");
                 Utils.readLinesAndClose(process.getErrorStream(), result, "ERROR: ");
             }
             return result;

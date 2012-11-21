@@ -18,19 +18,22 @@ public class StepFinish extends Step {
     }
 
     protected void show() {
+        MyLog.log("FINISHED");
         phase = "stepFinish";
         ui.setContentView(R.layout.step5);
 
         btnReboot = (Button) ui.findViewById(R.id.btnReboot);
-        btnReboot.setVisibility(showRebootLabel ? View.VISIBLE : View.INVISIBLE);
+        // btnReboot.setVisibility(showRebootLabel ? View.VISIBLE : View.INVISIBLE);
+        btnReboot.setVisibility(View.INVISIBLE);
 
         textLog = (TextView) ui.findViewById(R.id.textLog5);
-        textLog.setText(text);
+        textLog.setText(text + ui.getResources().getText(R.string.textInfo).toString());
         Linkify.addLinks(textLog, Linkify.ALL);
 
         btnNext = (Button) ui.findViewById(R.id.btnNext5);
         btnNext.setOnClickListener(new OnClickListener() {
             public void onClick(View view) {
+                MyLog.log("EXIT");
                 ui.finish();
             }
         });
@@ -38,6 +41,7 @@ public class StepFinish extends Step {
             public void onClick(View view) {
                 btnReboot.setVisibility(View.INVISIBLE);
                 try {
+                    MyLog.log("REBOOT");
                     ExecSu.exec("reboot");
                 } catch (Exception ex) {
                 }

@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import org.alex73.android.arsc2.Translation;
 import org.alex73.android.common.FileInfo;
 
 import android.app.Activity;
@@ -24,6 +23,7 @@ public class AndroidBel extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        MyLog.create();
         new Step1(this).doit();
     }
 

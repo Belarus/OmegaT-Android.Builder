@@ -73,12 +73,14 @@ public class Step4 extends Step {
         int requiredBlocks = 0;
         int blockSize = freeStat.getBlockSize();
         for (FileInfo fi : files) {
+            phase = "спраўджвалі " + fi.localFile.getPath();
             if (!local.isFileTranslated(fi.localFile)) {
                 requiredBlocks += (fi.localSize + blockSize - 1) / blockSize;
             }
         }
         requiredBlocks += 4;
         if (requiredBlocks > freeStat.getAvailableBlocks()) {
+            MyLog.log("## no space: required " + requiredBlocks + " but have " + freeStat.getAvailableBlocks());
             String txt = ui.getResources().getText(R.string.textNoSpace).toString();
             txt = txt.replace("$0", LocalStorage.BACKUP_DIR);
             txt = txt.replace("$1", Utils.textSize(freeStat.getAvailableBlocks() * blockSize));
@@ -128,12 +130,15 @@ public class Step4 extends Step {
             return;
         }
 
+        MyLog.log("## change system language");
         showOperation(R.string.opSetup);
         ui.setGlobalLanguage();
 
         if (stopped) {
             return;
         }
+
+        MyLog.log("ALL TRANSLATED");
 
         ui.runOnUiThread(new Runnable() {
             public void run() {
@@ -153,6 +158,7 @@ public class Step4 extends Step {
             return;
         }
 
+        MyLog.log("## Translate " + fi.localFile.getPath() + " package " + fi.packageName);
         Log.v("AndroidBel", "Translate " + fi.localFile);
 
         ResourceProcessor rs;
@@ -200,6 +206,7 @@ public class Step4 extends Step {
         File f = local.patchFileToTemp(fi.localFile, translatedResources);
 
         if (!local.isFilesEquals(f, fi.localFile)) {
+            MyLog.log("## Translated result: translated");
             showOperation(R.string.opInstallTranslation);
             long free = JniWrapper.getSpaceNearFile(fi.localFile);
             long requiredAdditional = f.length() - fi.localFile.length();
@@ -207,6 +214,7 @@ public class Step4 extends Step {
                 throw new Exception("There is no space to overwrite " + fi.localFile.getPath());
             }
 
+            MyLog.log(ExecSu.exec("ls -l '" + fi.localFile.getPath() + "'"));
             Permissions p = local.getPermissions(fi);
             local.openFileAccess(p);
             try {
@@ -218,11 +226,20 @@ public class Step4 extends Step {
             } finally {
                 local.closeFileAccess(p);
             }
+            MyLog.log(ExecSu.exec("ls -l '" + fi.localFile.getPath() + "'"));
+            ui.runOnUiThread(new Runnable() {
+                public void run() {
+                    textLog.setText(fi.packageName + " - перакладзены\n" + textLog.getText());
+                }
+            });
+        } else {
+            MyLog.log("## Translated result: file equals");
+            ui.runOnUiThread(new Runnable() {
+                public void run() {
+                    textLog.setText(fi.packageName + " - быў перакладзены раней\n" + textLog.getText());
+                }
+            });
         }
-        ui.runOnUiThread(new Runnable() {
-            public void run() {
-                textLog.setText(fi.packageName + " перакладзены\n" + textLog.getText());
-            }
-        });
+        MyLog.log("## Translation finished " + fi.localFile.getPath());
     }
 }

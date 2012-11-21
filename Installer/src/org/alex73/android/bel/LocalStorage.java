@@ -47,10 +47,6 @@ public class LocalStorage {
 
     final static String UTF8 = "UTF-8";
 
-    final static String DATETIME_PATTERN = "-yyyyMMdd-HHmmss";
-
-    Properties mv1;
-
     private List<String[]> mounts;
 
     public LocalStorage() throws Exception {
@@ -120,12 +116,15 @@ public class LocalStorage {
         long free = JniWrapper.getSpaceNearFile(origFile);
         if (free < newFile.length()) {
             // less space than required
+            MyLog.log("## moveToOriginal - less space");
             copyFile(newFile, origFile);
         } else {
             // more than required
+            MyLog.log("## moveToOriginal - more space");
             File new2 = new File(origFile.getPath() + ".new");
             try {
                 copyFile(newFile, new2);
+                setFileAccess(perms, new2);
                 if (!new2.renameTo(origFile)) {
                     throw new Exception("Error renaming to " + origFile);
                 }
@@ -139,12 +138,15 @@ public class LocalStorage {
         long free = JniWrapper.getSpaceNearFile(origFile);
         if (free < newFile.length()) {
             // less space than required
-            ExecSu.exec("mv '" + newFile.getPath() + "' '" + origFile.getPath() + "'");
+            MyLog.log("## moveToOriginalUid - less space");
+            ExecSu.exec("dd 'if=" + newFile.getPath() + "' 'of=" + origFile.getPath() + "'");
         } else {
             // more than required
+            MyLog.log("## moveToOriginalUid - more space");
             File new2 = new File(origFile.getPath() + ".new");
             try {
-                ExecSu.exec("mv '" + newFile.getPath() + "' '" + new2.getPath() + "'");
+                ExecSu.exec("dd 'if=" + newFile.getPath() + "' 'of=" + new2.getPath() + "'");
+                setFileAccess(perms, new2);
                 ExecSu.exec("mv '" + new2.getPath() + "' '" + origFile.getPath() + "'");
             } finally {
                 ExecSu.execEvenFail("rm '" + new2.getPath() + "'");
@@ -249,28 +251,12 @@ public class LocalStorage {
     }
 
     private void storeInfo() throws Exception {
-        final List<String> output = new ArrayList<String>();
-
-        output.add("## mount");
-        output.addAll(ExecSu.execEvenFail("mount"));
-
-        output.add("## df");
-        output.addAll(ExecSu.execEvenFail("df"));
-
-        output.add("## ls -l /system/app/");
-        output.addAll(ExecSu.execEvenFail("ls -l /system/app/"));
-
-        output.add("## ls -l /system/framework/");
-        output.addAll(ExecSu.execEvenFail("ls -l /system/framework/"));
-
-        output.add("## ls -l /data/app/");
-        output.addAll(ExecSu.execEvenFail("ls -l /data/app/"));
-
-        output.add("## maxMemory: " + Utils.textSize(Runtime.getRuntime().maxMemory()));
-
-        File outFile = new File(BACKUP_DIR + "log" + new SimpleDateFormat(DATETIME_PATTERN).format(new Date()) + ".txt");
-        outFile.getParentFile().mkdirs();
-        Utils.writeLines(outFile, output);
+        MyLog.log(ExecSu.execEvenFail("mount"));
+        MyLog.log(ExecSu.execEvenFail("df"));
+        MyLog.log(ExecSu.execEvenFail("ls -l /system/app/"));
+        MyLog.log(ExecSu.execEvenFail("ls -l /system/framework/"));
+        MyLog.log(ExecSu.execEvenFail("ls -l /data/app/"));
+        MyLog.log("## maxJavaMemory: " + Utils.textSize(Runtime.getRuntime().maxMemory()));
     }
 
     public void backupApk(FileInfo fi) throws Exception {
@@ -324,19 +310,22 @@ public class LocalStorage {
     }
 
     public void closeFileAccess(Permissions p) throws Exception {
-        if (!p.mountedUid) {
-            ExecSu.exec("chmod " + Long.toOctalString(p.dir.perm) + " '" + p.dir.path + "'");
-            ExecSu.exec("chmod " + Long.toOctalString(p.file.perm) + " '" + p.file.path + "'");
-            ExecSu.exec("chown " + p.file.owner + "." + p.file.group + " '" + p.file.path + "'");
-        }
+        ExecSu.exec("chmod " + Long.toOctalString(p.dir.perm) + " '" + p.dir.path + "'");
+        ExecSu.exec("chmod " + Long.toOctalString(p.file.perm) + " '" + p.file.path + "'");
+        ExecSu.exec("chown " + p.file.owner + "." + p.file.group + " '" + p.file.path + "'");
         if (p.mountedRO) {
             ExecSu.execEvenFail("mount -o remount," + p.mountOptions + " -t " + p.mountType + " " + p.mountDevice
                     + " '" + p.mountPoint + "'");
         }
     }
 
+    public void setFileAccess(Permissions p, File f) throws Exception {
+        ExecSu.exec("chmod " + Long.toOctalString(p.file.perm) + " '" + f.getPath() + "'");
+        ExecSu.exec("chown " + p.file.owner + "." + p.file.group + " '" + f.getPath() + "'");
+    }
+
     private void exec10su(String cmd) throws Exception {
-        int tries = 0;
+  int tries = 0;
         while (true) {
             try {
                 ExecSu.exec(cmd);

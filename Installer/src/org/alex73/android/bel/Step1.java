@@ -24,12 +24,14 @@ public class Step1 extends Step {
         boolean rooted = new LocalStorage().checkSu();
 
         if (!rooted) {
+            MyLog.log("NON-ROOTED");
             ui.runOnUiThread(new Runnable() {
                 public void run() {
                     new StepFinish(ui, ui.getResources().getText(R.string.msgRoot), false).doit();
                 }
             });
         } else {
+            MyLog.log("ROOTED");
             ui.runOnUiThread(new Runnable() {
                 public void run() {
                     Linkify.addLinks(textLog, Linkify.ALL);

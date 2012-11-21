@@ -144,6 +144,7 @@ public final class R {
         public static final int textDownloadSize=0x7f050017;
         public static final int textError=0x7f050015;
         public static final int textFinished=0x7f050016;
+        public static final int textInfo=0x7f05001c;
         public static final int textIntro=0x7f050013;
         public static final int textLabel3=0x7f05001a;
         public static final int textNoSpace=0x7f05001b;

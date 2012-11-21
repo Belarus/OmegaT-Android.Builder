@@ -40,6 +40,7 @@ public abstract class Step extends Thread {
         try {
             process();
             if (stopped) {
+                MyLog.log("STOPPED MANUALLY");
                 ui.runOnUiThread(new Runnable() {
                     public void run() {
                         new StepFinish(ui, ui.getResources().getText(R.string.textStopped), false).doit();
@@ -47,6 +48,7 @@ public abstract class Step extends Thread {
                 });
             }
         } catch (Throwable ex) {
+            MyLog.log(ex);
             StringWriter wr = new StringWriter();
             ex.printStackTrace(new PrintWriter(wr));
             final String s = wr.toString();

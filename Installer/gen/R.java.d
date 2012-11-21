@@ -44,6 +44,7 @@
 /gits/Android.Builder/Installer/res/raw/translation_com_android_bluetooth.bin \
 /gits/Android.Builder/Installer/res/raw/translation_com_android_providers_subscribedfeeds.bin \
 /gits/Android.Builder/Installer/res/raw/translation_com_cyanogenmod_cmparts.bin \
+/gits/Android.Builder/Installer/res/raw/translation_com_deadyogi_apps_chugunka.bin \
 /gits/Android.Builder/Installer/res/raw/translation_com_google_android_talk.bin \
 /gits/Android.Builder/Installer/res/raw/translation_android.bin \
 /gits/Android.Builder/Installer/res/raw/translation_com_android_providers_applications.bin \
