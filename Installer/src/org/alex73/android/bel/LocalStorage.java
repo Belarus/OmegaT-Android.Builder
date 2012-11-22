@@ -10,12 +10,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -32,11 +29,26 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.util.Xml;
 
+/**
+ * FileObserver catch events:
+ * 
+ * on write new file via FileOutputStream - CLOSE_WRITE for to
+ *
+ * on write into existing file via FileOutputStream - CLOSE_WRITE for to
+ *
+ * on rename into existing - MOVED_FROM for from, MOVED_TO for to
+ * 
+ * on 'mv ..' on one system device into existing - MOVED_FROM for from, MOVED_TO for to
+ * 
+ * on 'dd ..' on one system device into existing - CLOSE_WRITE for to
+ * 
+ * lastModifiedTime mustn't be changed, because PackageManagerService checks it on system startup, then checks certificates
+ */
 public class LocalStorage {
     final static int BUFFER_SIZE = 32768;
 
     final static String BACKUP_PARTITION = Environment.getExternalStorageDirectory().getPath();
-    final static String OUR_DIR = BACKUP_PARTITION + "/i18n-bel//";
+    final static String OUR_DIR = BACKUP_PARTITION + "/i18n-bel/";
     final static String BACKUP_DIR = OUR_DIR + "/backup/";
 
     final static Pattern RE_APKNAME = Pattern.compile("(.+)\\.apk$");
@@ -124,6 +136,7 @@ public class LocalStorage {
             File new2 = new File(origFile.getPath() + ".new");
             try {
                 copyFile(newFile, new2);
+                new2.setLastModified(origFile.lastModified());
                 setFileAccess(perms, new2);
                 if (!new2.renameTo(origFile)) {
                     throw new Exception("Error renaming to " + origFile);

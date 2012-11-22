@@ -17,7 +17,7 @@ public class MyLog {
     static private BufferedWriter wr;
 
     public synchronized static void create() {
-        outFile = new File(LocalStorage.BACKUP_DIR + "log"
+        outFile = new File(LocalStorage.OUR_DIR, "log"
                 + new SimpleDateFormat(DATETIME_PATTERN, Locale.US).format(new Date()) + ".txt");
         outFile.getParentFile().mkdirs();
     }
