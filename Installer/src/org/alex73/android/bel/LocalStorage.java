@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +26,9 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import android.content.pm.ApplicationInfo;
+import android.content.res.Resources;
+import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.util.Xml;
@@ -61,6 +65,8 @@ public class LocalStorage {
 
     private List<String[]> mounts;
 
+    private String replacerPath;
+
     public LocalStorage() throws Exception {
         BufferedReader rd = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/mounts"), "UTF-8"));
         try {
@@ -72,6 +78,28 @@ public class LocalStorage {
         } finally {
             Utils.mustClose(rd);
         }
+    }
+
+    public void extractReplacer(Resources resources, ApplicationInfo applicationInfo) throws Exception {
+        int rid = Utils.getRawResourceById("replacer_" + Build.CPU_ABI.replace('-', '_'));
+        if (rid == 0) {
+            throw new Exception("Unknown architecture");
+        }
+
+        File outFile = new File(applicationInfo.dataDir, "replacer");
+        InputStream in = null;
+        OutputStream out = null;
+
+        try {
+            in = resources.openRawResource(rid);
+            out = new FileOutputStream(outFile);
+            Utils.copy(in, out);
+        } finally {
+            Utils.mustClose(in);
+            Utils.mustClose(out);
+        }
+        JniWrapper.chmod(outFile, 0755);
+        replacerPath = outFile.getPath();
     }
 
     public List<FileInfo> getLocalFiles() throws Exception {
@@ -126,59 +154,17 @@ public class LocalStorage {
 
     public void moveToOriginal(File newFile, File origFile, Permissions perms) throws Exception {
         long free = JniWrapper.getSpaceNearFile(origFile);
+        String mode;
         if (free < newFile.length()) {
             // less space than required
             MyLog.log("## moveToOriginal - less space");
-            copyFile(newFile, origFile);
+            mode = "write";
         } else {
             // more than required
             MyLog.log("## moveToOriginal - more space");
-            File new2 = new File(origFile.getPath() + ".new");
-            try {
-                copyFile(newFile, new2);
-                new2.setLastModified(origFile.lastModified());
-                setFileAccess(perms, new2);
-                if (!new2.renameTo(origFile)) {
-                    throw new Exception("Error renaming to " + origFile);
-                }
-            } finally {
-                new2.delete();
-            }
+            mode = "rename";
         }
-    }
-
-    public void moveToOriginalUid(File newFile, File origFile, Permissions perms) throws Exception {
-        long free = JniWrapper.getSpaceNearFile(origFile);
-        if (free < newFile.length()) {
-            // less space than required
-            MyLog.log("## moveToOriginalUid - less space");
-            ExecSu.exec("dd 'if=" + newFile.getPath() + "' 'of=" + origFile.getPath() + "'");
-        } else {
-            // more than required
-            MyLog.log("## moveToOriginalUid - more space");
-            File new2 = new File(origFile.getPath() + ".new");
-            try {
-                ExecSu.exec("dd 'if=" + newFile.getPath() + "' 'of=" + new2.getPath() + "'");
-                setFileAccess(perms, new2);
-                ExecSu.exec("mv '" + new2.getPath() + "' '" + origFile.getPath() + "'");
-            } finally {
-                ExecSu.execEvenFail("rm '" + new2.getPath() + "'");
-            }
-        }
-    }
-
-    public void copyFile(File fileFrom, File fileTo) throws IOException {
-        FileInputStream in = null;
-        FileOutputStream out = null;
-        try {
-            in = new FileInputStream(fileFrom);
-            out = new FileOutputStream(fileTo);
-            Utils.copy(in, out);
-            out.flush();
-        } finally {
-            Utils.mustClose(in);
-            Utils.mustClose(out);
-        }
+        ExecSu.exec(replacerPath + " " + mode + " '" + newFile.getPath() + "' '" + origFile.getPath() + "'");
     }
 
     public boolean isFilesEquals(File f1, File f2) throws IOException {
@@ -218,18 +204,18 @@ public class LocalStorage {
         Permissions p = new Permissions();
         p.file = new FilePerm();
         p.file.path = fi.localFile.getPath();
-        JniWrapper.getPermissions(p.file);
-        p.file.perm ^= 0100000;
-        if (p.file.perm < 0 || p.file.perm > 0777) {
-            throw new Exception("Invalid permission for " + fi.localFile + ": " + Long.toOctalString(p.file.perm));
-        }
-        p.dir = new FilePerm();
-        p.dir.path = fi.localFile.getParent();
-        JniWrapper.getPermissions(p.dir);
-        p.dir.perm ^= 0040000;
-        if (p.dir.perm < 0 || p.dir.perm > 0777) {
-            throw new Exception("Invalid permission for " + fi.localFile + ": " + Long.toOctalString(p.dir.perm));
-        }
+//        JniWrapper.getPermissions(p.file);
+//        p.file.perm ^= 0100000;
+//        if (p.file.perm < 0 || p.file.perm > 0777) {
+//            throw new Exception("Invalid permission for " + fi.localFile + ": " + Long.toOctalString(p.file.perm));
+//        }
+//        p.dir = new FilePerm();
+//        p.dir.path = fi.localFile.getParent();
+//        JniWrapper.getPermissions(p.dir);
+//        p.dir.perm ^= 0040000;
+//        if (p.dir.perm < 0 || p.dir.perm > 0777) {
+//            throw new Exception("Invalid permission for " + fi.localFile + ": " + Long.toOctalString(p.dir.perm));
+//        }
 
         for (String[] m : mounts) {
             if ("/".equals(m[1])) {
@@ -316,16 +302,16 @@ public class LocalStorage {
         if (p.mountedRO) {
             ExecSu.exec("mount -o remount,rw" + " -t " + p.mountType + " " + p.mountDevice + " '" + p.mountPoint + "'");
         }
-        if (!p.mountedUid) {
-            ExecSu.exec("chmod 777 '" + p.dir.path + "'");
-            ExecSu.exec("chmod 666 '" + p.file.path + "'");
-        }
+//        if (!p.mountedUid) {
+//            ExecSu.exec("chmod 777 '" + p.dir.path + "'");
+//            ExecSu.exec("chmod 666 '" + p.file.path + "'");
+//        }
     }
 
     public void closeFileAccess(Permissions p) throws Exception {
-        ExecSu.exec("chmod " + Long.toOctalString(p.dir.perm) + " '" + p.dir.path + "'");
-        ExecSu.exec("chmod " + Long.toOctalString(p.file.perm) + " '" + p.file.path + "'");
-        ExecSu.exec("chown " + p.file.owner + "." + p.file.group + " '" + p.file.path + "'");
+//        ExecSu.exec("chmod " + Long.toOctalString(p.dir.perm) + " '" + p.dir.path + "'");
+//        ExecSu.exec("chmod " + Long.toOctalString(p.file.perm) + " '" + p.file.path + "'");
+//        ExecSu.exec("chown " + p.file.owner + "." + p.file.group + " '" + p.file.path + "'");
         if (p.mountedRO) {
             ExecSu.execEvenFail("mount -o remount," + p.mountOptions + " -t " + p.mountType + " " + p.mountDevice
                     + " '" + p.mountPoint + "'");

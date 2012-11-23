@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.reflect.Field;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
@@ -166,6 +167,15 @@ public class Utils {
             return size / 1024 + "KiB";
         } else {
             return size + "B";
+        }
+    }
+
+    public static int getRawResourceById(String rawResourceId) {
+        try {
+            Field f = R.raw.class.getField(rawResourceId);
+            return f.getInt(R.raw.class);
+        } catch (Exception ex) {
+            return 0;
         }
     }
 }

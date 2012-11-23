@@ -11,6 +11,8 @@ public class JniWrapper {
 
     private static native long getSpaceNearFile(String path);
 
+    private static native int chmod(String path, int mode);
+
     public static long getSpaceNearFile(File file) throws IOException {
         long r = getSpaceNearFile(file.getPath());
         if (r < 0) {
@@ -20,6 +22,13 @@ public class JniWrapper {
             MyLog.log("## getSpaceNearFile " + file.getPath() + ": " + r);
         }
         return r;
+    }
+
+    public static void chmod(File file, int mode) throws IOException {
+        int r = chmod(file.getPath(), mode);
+        if (r < 0) {
+            throw new IOException("Error chmod " + file);
+        }
     }
 
     static {

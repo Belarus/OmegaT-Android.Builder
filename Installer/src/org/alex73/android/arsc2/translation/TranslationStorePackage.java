@@ -3,11 +3,10 @@ package org.alex73.android.arsc2.translation;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 
 import org.alex73.android.StyledIdString;
 import org.alex73.android.StyledString;
-import org.alex73.android.bel.R;
+import org.alex73.android.bel.Utils;
 import org.alex73.android.common.UTFUtils;
 
 import android.content.res.Resources;
@@ -123,11 +122,6 @@ public class TranslationStorePackage {
     }
 
     private static int getResourceID(String packageName) {
-        try {
-            Field f = R.raw.class.getField("translation_" + packageName.replace('.', '_'));
-            return f.getInt(R.raw.class);
-        } catch (Exception ex) {
-            return 0;
-        }
+        return Utils.getRawResourceById("translation_" + packageName.replace('.', '_'));
     }
 }

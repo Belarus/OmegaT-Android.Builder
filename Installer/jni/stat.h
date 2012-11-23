@@ -23,6 +23,14 @@ JNIEXPORT void JNICALL Java_org_alex73_android_common_JniWrapper_getPermissions
 JNIEXPORT jlong JNICALL Java_org_alex73_android_common_JniWrapper_getSpaceNearFile
   (JNIEnv *, jclass, jstring);
 
+/*
+ * Class:     org_alex73_android_common_JniWrapper
+ * Method:    chmod
+ * Signature: (Ljava/lang/String;I)I
+ */
+JNIEXPORT jint JNICALL Java_org_alex73_android_common_JniWrapper_chmod
+  (JNIEnv *, jclass, jstring, jint);
+
 #ifdef __cplusplus
 }
 #endif

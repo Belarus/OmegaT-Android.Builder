@@ -53,6 +53,15 @@ JNIEXPORT void JNICALL Java_org_alex73_android_common_JniWrapper_getPermissions
   }
 }
 
+JNIEXPORT jint JNICALL Java_org_alex73_android_common_JniWrapper_chmod
+  (JNIEnv *env, jclass cl, jstring path, jint mode) {
+
+  const char *nativePath = (*env)->GetStringUTFChars(env, path, 0);
+  int r=chmod(nativePath, mode);
+  (*env)->ReleaseStringUTFChars(env, path, nativePath);
+  return r;
+}
+
 JNIEXPORT jlong JNICALL Java_org_alex73_android_common_JniWrapper_getSpaceNearFile
   (JNIEnv *env, jclass cl, jstring path) {
 

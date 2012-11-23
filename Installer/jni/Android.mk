@@ -14,7 +14,7 @@ include $(BUILD_SHARED_LIBRARY)
 # ========================================================
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := mv
-LOCAL_SRC_FILES := mv.c
+LOCAL_MODULE    := replacer
+LOCAL_SRC_FILES := replacer.c
 
 include $(BUILD_EXECUTABLE)

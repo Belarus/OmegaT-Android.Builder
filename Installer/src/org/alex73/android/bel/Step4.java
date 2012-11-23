@@ -54,6 +54,7 @@ public class Step4 extends Step {
         incProgress();
 
         local = new LocalStorage();
+        local.extractReplacer(ui.getResources(), ui.getApplicationInfo());
 
         List<FileInfo> files = local.getLocalFiles();
 
@@ -210,19 +211,22 @@ public class Step4 extends Step {
             showOperation(R.string.opInstallTranslation);
             long free = JniWrapper.getSpaceNearFile(fi.localFile);
             long requiredAdditional = f.length() - fi.localFile.length();
+            MyLog.log("## Free space: " + free + ", requiredAdditional: " + requiredAdditional);
             if (free < requiredAdditional + 16 * 1024) {
-                throw new Exception("There is no space to overwrite " + fi.localFile.getPath());
+                MyLog.log("## Translated result: not enough space");
+                ui.runOnUiThread(new Runnable() {
+                    public void run() {
+                        textLog.setText(fi.packageName + " - НЕХАПАЕ МЕСЦА\n" + textLog.getText());
+                    }
+                });
+                return;
             }
 
             MyLog.log(ExecSu.exec("ls -l '" + fi.localFile.getPath() + "'"));
             Permissions p = local.getPermissions(fi);
             local.openFileAccess(p);
             try {
-                if (p.mountedUid) {
-                    local.moveToOriginalUid(f, fi.localFile, p);
-                } else {
-                    local.moveToOriginal(f, fi.localFile, p);
-                }
+                local.moveToOriginal(f, fi.localFile, p);
             } finally {
                 local.closeFileAccess(p);
             }
