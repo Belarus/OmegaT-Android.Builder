@@ -81,7 +81,20 @@ public class LocalStorage {
     }
 
     public void extractReplacer(Resources resources, ApplicationInfo applicationInfo) throws Exception {
-        int rid = Utils.getRawResourceById("replacer_" + Build.CPU_ABI.replace('-', '_'));
+        String CPU_ABI = Build.CPU_ABI;
+        MyLog.log("## CPU_ABI = " + CPU_ABI);
+        String CPU_ABI2;
+        try {
+            CPU_ABI2 = (String) Build.class.getDeclaredField("CPU_ABI2").get(null);
+        } catch (Exception e) {
+            CPU_ABI2 = "none";
+        }
+        MyLog.log("## CPU_ABI2 = " + CPU_ABI2);
+
+        int rid = Utils.getRawResourceById("replacer_" + CPU_ABI.replace('-', '_'));
+        if (rid == 0) {
+            rid = Utils.getRawResourceById("replacer_" + CPU_ABI2.replace('-', '_'));
+        }
         if (rid == 0) {
             throw new Exception("Unknown architecture");
         }
