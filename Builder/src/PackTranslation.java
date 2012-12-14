@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
 import javax.xml.bind.JAXBContext;
@@ -20,6 +22,7 @@ import org.alex73.android.Assert;
 import org.alex73.android.StAXDecoderReader2;
 import org.alex73.android.StyledIdString;
 import org.alex73.android.StyledString;
+import org.apache.commons.io.FileUtils;
 import org.omegat.core.Core;
 import org.omegat.core.data.IProject;
 import org.omegat.core.data.ProjectProperties;
@@ -27,7 +30,6 @@ import org.omegat.core.data.RealProject;
 import org.omegat.core.data.TMXEntry;
 import org.omegat.filters2.master.PluginUtils;
 import org.omegat.util.ProjectFileStorage;
-import org.omegat.util.RuntimePreferences;
 
 import android.control.App;
 import android.control.Translation;
@@ -47,9 +49,10 @@ public class PackTranslation {
     static Set<CharSequence> usedTags = new TreeSet<CharSequence>();
     static StringBuilder outstr = new StringBuilder(1000000);
     static Map<CharSequence, Integer> outstrpos = new HashMap<CharSequence, Integer>();
+    static List<String> tagsErrors = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
-        //RuntimePreferences.setConfigDir("../../Android.OmegaT/Android.settings/");
+        // RuntimePreferences.setConfigDir("../../Android.OmegaT/Android.settings/");
         Map<String, String> params = new TreeMap<String, String>();
         params.put("alternate-filename-from", "/.+.xml$");
         params.put("alternate-filename-to", "/");
@@ -65,8 +68,7 @@ public class PackTranslation {
             }
         }
 
-        ProjectProperties props = ProjectFileStorage.loadProjectProperties(new File(
-                "../../Android.OmegaT/"));
+        ProjectProperties props = ProjectFileStorage.loadProjectProperties(new File("../../Android.OmegaT/"));
         RealProject project = new RealProject(props);
         project.loadProject();
         project.compileProject(".*");
@@ -90,6 +92,8 @@ public class PackTranslation {
                     countDefault++;
                     store.addDefaultTranslation(source, trans.translation);
                     defaults.put(source, trans.translation);
+                    // check tags
+                    checkTags(source, trans.translation);
                 }
             }
         });
@@ -117,7 +121,14 @@ public class PackTranslation {
             exact.put(pkg, collected);
             countTranslations += collected.size();
             packageStore.save();
+
+            // check tags
+            for (Map.Entry<StyledIdString, StyledString> en : collected.entrySet()) {
+                checkTags(en.getKey(), en.getValue());
+            }
         }
+
+        FileUtils.writeLines(new File(projectPath, "tags-errors.txt"), "UTF-8", tagsErrors);
 
         System.out.println("countDefault = " + countDefault);
         System.out.println("countTranslated = " + countTranslations);
@@ -127,9 +138,10 @@ public class PackTranslation {
             System.out.print(" <" + tn + ">");
         }
         System.out.println();
+        System.out.println("TAGS ERRORS: " + tagsErrors.size());
 
-        //write();
-        //write();
+        // write();
+        // write();
 
         log.close();
         System.exit(0);
@@ -209,12 +221,12 @@ public class PackTranslation {
     }
 
     static void collect(String id, StyledString origin, StyledString translated,
-            Map<StyledIdString, StyledString> collected, TranslationStorePackage packageStore)
-            throws Exception {
+            Map<StyledIdString, StyledString> collected, TranslationStorePackage packageStore) throws Exception {
         if (origin == null && translated == null) {
             return;
         }
-        // TODO Assert.assertTrue("Wrong tags", origin.equalsTagNames(translated));
+        // TODO Assert.assertTrue("Wrong tags",
+        // origin.equalsTagNames(translated));
         removeSomeTags(origin);
         origin.removeSpaces();
         boolean nonTranslated = origin.equals(translated);
@@ -244,7 +256,8 @@ public class PackTranslation {
         packageStore.addTranslation(s, translated);
         StyledString exist = collected.get(s);
         if (exist != null) {
-            // TODO Assert.assertTrue("Changed string(id=" + id + "): '" + exist + "' and '" + translated +
+            // TODO Assert.assertTrue("Changed string(id=" + id + "): '" + exist
+            // + "' and '" + translated +
             // "'",
             // exist.equals(translated));
         } else {
@@ -290,5 +303,118 @@ public class PackTranslation {
     static void writeStyledIdString(StyledIdString str) throws Exception {
         writeString(str.id);
         writeStyledString(str);
+    }
+
+    static void checkTags(StyledString source, StyledString target) {
+        checkTags(source.raw, target.raw);
+    }
+
+    static void checkTags(String source, String target) {
+        extractTags(source, sourceTags);
+        extractTags(target, targetTags);
+        if (sourceTags.size() != targetTags.size()) {
+            tagsErrors.add("Wrong tags: ===" + source + "===" + target + "===");
+        } else {
+            boolean equals = true;
+            for (int i = 0; i < sourceTags.size(); i++) {
+                if (!sourceTags.get(i).equals(targetTags.get(i))) {
+                    equals = false;
+                    break;
+                }
+            }
+            if (!equals) {
+                equals = true;
+                // try tags with index
+                for (int i = 0; i < sourceTags.size(); i++) {
+                    if (!RE_TAG_INDEXED.matcher(sourceTags.get(i)).matches()) {
+                        equals = false;
+                        break;
+                    }
+                    if (!RE_TAG_INDEXED.matcher(targetTags.get(i)).matches()) {
+                        equals = false;
+                        break;
+                    }
+                }
+                for (int i = 0; i < sourceTags.size(); i++) {
+                    if (!targetTags.remove(sourceTags.get(i))) {
+                        equals = false;
+                        break;
+                    }
+                }
+            }
+            if (!equals) {
+                tagsErrors.add("Wrong tags: ===" + source + "===" + target + "===");
+            }
+        }
+    }
+
+    static List<String> sourceTags = new ArrayList<>(), targetTags = new ArrayList<>();
+    static Pattern RE_TAG_INDEXED = Pattern.compile("%[0-9]+\\$.+");
+
+    static void extractTags(String str, List<String> tags) {
+        tags.clear();
+        int pos = -1;
+        while (true) {
+            pos = str.indexOf('%', pos + 1);
+            if (pos < 0) {
+                break;
+            }
+            int end;
+            try {
+                for (int i = pos + 1;; i++) {
+                    if (i == str.length()) {
+                        if (i == pos + 1) {
+                            // no tag
+                            end = -1;
+                            break;
+                        } else {
+                          //  tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                            return;
+                        }
+                    }
+                    char c = str.charAt(i);
+                    if (c == '%') {
+                        if (i == pos + 1) {
+                            end = i;
+                            break;
+                        }
+                     //   tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                        return;
+                    } else if (c == ' ') {
+                        if (i == pos + 1) {
+                            // no tag
+                            end = -1;
+                            break;
+                        } else {
+                        //    tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                            return;
+                        }
+                    } else if (c == 't') {
+                        i++;
+                        c = str.charAt(i);
+                        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+                            end = i;
+                            break;
+                        } else {
+                            tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                            return;
+                        }
+                    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+                        end = i;
+                        break;
+                    }
+                }
+            } catch (StringIndexOutOfBoundsException ex) {
+              //  tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                return;
+            }
+            if (end >= 0) {
+                String t = str.substring(pos, end + 1);
+                tags.add(t);
+                pos = end;
+            } else {
+                pos++;
+            }
+        }
     }
 }
