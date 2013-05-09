@@ -1,1 +1,3 @@
+*.so  binary
+*.bin binary
 * text=auto

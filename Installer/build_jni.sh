@@ -2,8 +2,8 @@
 set -x
 
 javah -o jni/stat.h -classpath bin/classes org.alex73.android.common.JniWrapper
-/data/opt/android-ndk-r8c/ndk-build clean
-/data/opt/android-ndk-r8c/ndk-build NDK_DEBUG=0
+/opt/android-ndk/ndk-build clean
+/opt/android-ndk/ndk-build NDK_DEBUG=0
 
 for i in libs/*; do
   archfrom=`basename $i`
