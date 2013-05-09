@@ -19,7 +19,7 @@
 	<string name="opInstallTranslation">Усталёўваем пераклад...</string>
 	<string name="opSetup">Зьмяняем моўныя налады...</string>
 	<string name="opRead">Чытаем...</string>
-	<string name="textIntro">Гэта ўсталёўнік беларускае мовы.\n\nЗараз мы паспрабуем усталяваць пераклад. Магчыма, тэлефон перастартуе ці спытаеццца PIN код...\n\nПадрабязнасьці пра пераклад — на http://mounik.org/w/Android. Калі ў вас ёсьць пытаньні — пішыце на i18n-bel-android@googlegroups.com</string>
+	<string name="textIntro">Гэта ўсталёўнік беларускае мовы.\n\nЗараз мы паспрабуем усталяваць пераклад. Магчыма, тэлефон перастартуе ці спытаецца PIN код...\n\nПадрабязнасьці пра пераклад — на http://mounik.org/w/Android. Калі ў вас ёсьць пытаньні — пішыце на i18n-bel-android@googlegroups.com</string>
 	<string name="textStopped">Усталёўка спыненая. Можаце запусьціць пазьней...</string>
 	<string name="textError">Памылка</string>
 	<string name="textFinished">Пераклад усталяваны пасьпяхова. Рэзэрвовыя копіі файлаў захаваныя ў $0.\n\nПЕРАСТАРТУЙЦЕ ПРЫЛАДУ КАБ АКТЫВІЗАВАЦЬ УВЕСЬ ПЕРАКЛАД.</string>

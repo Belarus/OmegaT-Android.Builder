@@ -127,9 +127,14 @@ public class LocalStorage {
                         String name = attributes.getValue("name");
                         String codePath = attributes.getValue("codePath");
                         if (name != null && codePath != null) {
-                            FileInfo fi = new FileInfo(new File(codePath));
-                            fi.packageName = name;
-                            files.add(fi);
+                            // can be symlink in /data/system/packages.xml
+                            try {
+                                FileInfo fi = new FileInfo(new File(codePath).getCanonicalFile());
+                                fi.packageName = name;
+                                files.add(fi);
+                            } catch (IOException ex) {
+                                throw new SAXException(ex);
+                            }
                         }
                     }
                 }
