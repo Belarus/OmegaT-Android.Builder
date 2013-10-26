@@ -15,7 +15,7 @@ import android.control.Translation;
  * Imports source files from cyanogen.
  */
 public class UnpackCyanogenResources {
-    static String projectPath = "../../Android.OmegaT/Android/";
+    static String projectPath = "../../Android.OmegaT/";
 
     public static void main(String[] args) throws Exception {
         JAXBContext ctx = JAXBContext.newInstance(Translation.class);

@@ -341,6 +341,10 @@ public class LocalStorage {
         ExecSu.exec("chown " + p.file.owner + "." + p.file.group + " '" + f.getPath() + "'");
     }
 
+    public void grant(String packageName, String permissionName) throws Exception {
+        ExecSu.exec("pm grant " + packageName + " " + permissionName);
+    }
+
     private void exec10su(String cmd) throws Exception {
   int tries = 0;
         while (true) {

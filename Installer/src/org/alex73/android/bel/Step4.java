@@ -125,7 +125,6 @@ public class Step4 extends Step {
                 return;
             }
         }
-        local = null;
 
         if (stopped) {
             return;
@@ -133,7 +132,9 @@ public class Step4 extends Step {
 
         MyLog.log("## change system language");
         showOperation(R.string.opSetup);
-        ui.setGlobalLanguage();
+        ui.setGlobalLanguage(local);
+
+        local = null;
 
         if (stopped) {
             return;

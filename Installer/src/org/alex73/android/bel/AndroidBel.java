@@ -36,7 +36,11 @@ public class AndroidBel extends Activity {
                 getBaseContext().getResources().getDisplayMetrics());
     }
 
-    protected void setGlobalLanguage() throws Exception {
+    protected void setGlobalLanguage(LocalStorage local) throws Exception {
+        //set configuration - need for Android 4.2
+        local.grant("org.alex73.android.bel", "android.permission.CHANGE_CONFIGURATION");
+
+        // set locale
         Locale locale = new Locale("be", "BY");
 
         Class amnClass = Class.forName("android.app.ActivityManagerNative");
