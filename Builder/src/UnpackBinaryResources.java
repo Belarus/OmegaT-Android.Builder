@@ -93,7 +93,7 @@ public class UnpackBinaryResources {
             }
         });
 
-        File out = new File(projectPath + "/source/" + dirName);
+        File out = new File(projectPath + "/source-raw/" + dirName);
         out.mkdirs();
 
         checkAllStrings(rs.globalStringTable);
@@ -136,7 +136,7 @@ public class UnpackBinaryResources {
             String x = encoder.marshall(ss1);
             StyledString ss2 = decoder.unmarshall(x);
 
-            Assert.assertEquals(ss1.raw, ss2.raw);
+            Assert.assertEquals(ss1.raw, ss2.raw.replace("\\u0020", " "));
             Assert.assertArrayEquals(ss1.tags, ss2.tags);
         }
     }

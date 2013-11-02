@@ -6,13 +6,13 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
@@ -52,6 +52,9 @@ public class PackTranslation {
     static List<String> tagsErrors = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
+        File target = new File(projectPath, "target");
+        FileUtils.deleteDirectory(target);
+        target.mkdir();
         // RuntimePreferences.setConfigDir("../../Android.OmegaT/Android.settings/");
         Map<String, String> params = new TreeMap<String, String>();
         params.put("alternate-filename-from", "/.+.xml$");
@@ -73,7 +76,7 @@ public class PackTranslation {
         project.loadProject();
         project.compileProject(".*");
 
-        log = new PrintStream(new File("log"), "UTF-8");
+        // log = new PrintStream(new File("log"), "UTF-8");
 
         JAXBContext ctx = JAXBContext.newInstance(Translation.class);
         Translation translationInfo = (Translation) ctx.createUnmarshaller().unmarshal(
@@ -110,13 +113,19 @@ public class PackTranslation {
             Assert.assertNotNull("Unknown package", packageStore);
 
             Map<StyledIdString, StyledString> collected = new HashMap<StyledIdString, StyledString>();
+            Map<StyledIdString, String> collectedComments = new HashMap<StyledIdString, String>();
+            Map<StyledString, Set<String>> nonTranslatable = new HashMap<>();
             File[] fs = dir.listFiles();
             Assert.assertNotNull("There is no files", fs);
             Arrays.sort(fs);
             for (File f : fs) {
-                readSourceAndTrans(f, new File(dirOut, f.getName()), collected, packageStore);
+                if (f.getName().endsWith(".xml")) {
+                    System.out.println("Read " + f);
+                    readSourceAndTrans(f, new File(dirOut, f.getName()), collected, collectedComments,
+                            packageStore, nonTranslatable);
+                }
             }
-            Assert.assertTrue("Not translated", !collected.isEmpty());
+            Assert.assertTrue("Not translated " + dir, !collected.isEmpty());
             Assert.assertNull("Exist package", exact.get(pkg));
             exact.put(pkg, collected);
             countTranslations += collected.size();
@@ -126,8 +135,10 @@ public class PackTranslation {
             for (Map.Entry<StyledIdString, StyledString> en : collected.entrySet()) {
                 checkTags(en.getKey(), en.getValue());
             }
+            checkNonTranslatable(nonTranslatable, collected);
         }
 
+        Collections.sort(tagsErrors);
         FileUtils.writeLines(new File(projectPath, "tags-errors.txt"), "UTF-8", tagsErrors);
 
         System.out.println("countDefault = " + countDefault);
@@ -143,7 +154,9 @@ public class PackTranslation {
         // write();
         // write();
 
-        log.close();
+        if (log != null) {
+            log.close();
+        }
         System.exit(0);
     }
 
@@ -179,7 +192,8 @@ public class PackTranslation {
     }
 
     static void readSourceAndTrans(File inFile, File outFile, Map<StyledIdString, StyledString> collected,
-            TranslationStorePackage packageStore) throws Exception {
+            Map<StyledIdString, String> collectedComments, TranslationStorePackage packageStore,
+            Map<StyledString, Set<String>> nonTranslatable) throws Exception {
         StAXDecoderReader2 rdIn = new StAXDecoderReader2();
         rdIn.read(inFile);
         StAXDecoderReader2 rdOut = new StAXDecoderReader2();
@@ -189,7 +203,8 @@ public class PackTranslation {
             Map<String, StyledString> out = rdOut.getStrings();
             Assert.assertTrue("Wrong count", in.size() == out.size());
             for (Map.Entry<String, StyledString> en : in.entrySet()) {
-                collect(en.getKey(), en.getValue(), out.get(en.getKey()), collected, packageStore);
+                collect(en.getKey(), en.getValue(), out.get(en.getKey()), collected, collectedComments,
+                        inFile.getPath(), packageStore);
             }
         }
         {
@@ -201,39 +216,34 @@ public class PackTranslation {
                 List<StyledString> o = out.get(id);
                 Assert.assertTrue("Wrong length", i.size() == o.size());
                 for (int idx = 0; idx < i.size(); idx++) {
-                    collect(id, i.get(idx), o.get(idx), collected, packageStore);
+                    collect(id, i.get(idx), o.get(idx), collected, collectedComments, inFile.getPath(),
+                            packageStore);
                 }
             }
         }
         {
-            Map<String, Map<String, StyledString>> in = rdIn.getPlurals();
-            Map<String, Map<String, StyledString>> out = rdOut.getPlurals();
+            Map<String, StyledString> in = rdIn.getPlurals();
+            Map<String, StyledString> out = rdOut.getPlurals();
             Assert.assertTrue("Wrong count", in.size() == out.size());
-            for (String id : in.keySet()) {
-                Map<String, StyledString> i = in.get(id);
-                Map<String, StyledString> o = out.get(id);
-                Assert.assertTrue("Wrong length", i.size() == o.size());
-                for (String pid : i.keySet()) {
-                    collect(id + "/" + pid, i.get(pid), o.get(pid), collected, packageStore);
-                }
+            for (Map.Entry<String, StyledString> en : in.entrySet()) {
+                collect(en.getKey(), en.getValue(), out.get(en.getKey()), collected, collectedComments,
+                        inFile.getPath(), packageStore);
             }
         }
+        nonTranslatable.putAll(rdIn.getNonTranslatable());
     }
 
     static void collect(String id, StyledString origin, StyledString translated,
-            Map<StyledIdString, StyledString> collected, TranslationStorePackage packageStore) throws Exception {
+            Map<StyledIdString, StyledString> collected, Map<StyledIdString, String> collectedComments,
+            String path, TranslationStorePackage packageStore) throws Exception {
         if (origin == null && translated == null) {
             return;
         }
-        // TODO Assert.assertTrue("Wrong tags",
-        // origin.equalsTagNames(translated));
-        removeSomeTags(origin);
+        Assert.assertTrue("Wrong tags", origin.equalsTagNames(translated));
         origin.removeSpaces();
         boolean nonTranslated = origin.equals(translated);
         if (nonTranslated) {
             translated = origin;
-        } else {
-            removeSomeTags(translated);
         }
 
         for (StyledString.Tag tag : origin.tags) {
@@ -251,28 +261,20 @@ public class PackTranslation {
         s.id = id;
         s.raw = origin.raw;
         s.tags = origin.tags;
-        log.println("id: " + id);
-        s.dump(log);
+        if (log != null) {
+            log.println("id: " + id);
+            s.dump(log);
+        }
         packageStore.addTranslation(s, translated);
         StyledString exist = collected.get(s);
         if (exist != null) {
-            // TODO Assert.assertTrue("Changed string(id=" + id + "): '" + exist
-            // + "' and '" + translated +
-            // "'",
-            // exist.equals(translated));
+            if (!exist.equals(translated)) {
+                tagsErrors.add("Changed string:\nfrom '" + s + "'\n  to '" + exist + "'/'"
+                        + collectedComments.get(s) + "'\n and '" + translated + "'/'" + path + "'");
+            }
         } else {
             collected.put(s, translated);
-        }
-    }
-
-    static void removeSomeTags(StyledString str) {
-        for (int i = 0; i < str.tags.length; i++) {
-            if (str.tags[i].tagName.startsWith("g;") || str.tags[i].tagName.startsWith("anno")) {
-                List<StyledString.Tag> tags = new ArrayList(Arrays.asList(str.tags));
-                tags.remove(i);
-                str.tags = tags.toArray(new StyledString.Tag[tags.size()]);
-                i--;
-            }
+            collectedComments.put(s, path);
         }
     }
 
@@ -305,11 +307,31 @@ public class PackTranslation {
         writeStyledString(str);
     }
 
+    static void checkNonTranslatable(Map<StyledString, Set<String>> nonTranslatable,
+            Map<StyledIdString, StyledString> collected) {
+        for (StyledString nstr : nonTranslatable.keySet()) {
+            if (!nstr.hasTags() && defaults.containsKey(nstr.raw)) {
+                // exist default
+                tagsErrors.add("Default translation for non-translated: " + nstr.raw);
+                continue;
+            }
+            for (String id : nonTranslatable.get(nstr)) {
+                StyledIdString sid = new StyledIdString(id, nstr);
+                if (collected.containsKey(sid)) {
+                    tagsErrors.add("Default translation for non-translated with id: " + id + "/" + nstr.raw);
+                }
+            }
+        }
+    }
+
     static void checkTags(StyledString source, StyledString target) {
         checkTags(source.raw, target.raw);
     }
 
     static void checkTags(String source, String target) {
+        if (target.toLowerCase().contains("дадзены")) {
+            tagsErrors.add("Wrong translation: " + source + " => " + target);
+        }
         extractTags(source, sourceTags);
         extractTags(target, targetTags);
         if (sourceTags.size() != targetTags.size()) {
@@ -368,7 +390,8 @@ public class PackTranslation {
                             end = -1;
                             break;
                         } else {
-                          //  tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                            // tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str +
+                            // "===");
                             return;
                         }
                     }
@@ -378,7 +401,8 @@ public class PackTranslation {
                             end = i;
                             break;
                         }
-                     //   tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                        // tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str +
+                        // "===");
                         return;
                     } else if (c == ' ') {
                         if (i == pos + 1) {
@@ -386,7 +410,8 @@ public class PackTranslation {
                             end = -1;
                             break;
                         } else {
-                        //    tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                            // tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str +
+                            // "===");
                             return;
                         }
                     } else if (c == 't') {
@@ -396,7 +421,8 @@ public class PackTranslation {
                             end = i;
                             break;
                         } else {
-                            tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                            tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str
+                                    + "===");
                             return;
                         }
                     } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
@@ -405,7 +431,7 @@ public class PackTranslation {
                     }
                 }
             } catch (StringIndexOutOfBoundsException ex) {
-              //  tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
+                // tagsErrors.add("Unknown tag: ===" + str.substring(pos) + "=== in ===" + str + "===");
                 return;
             }
             if (end >= 0) {

@@ -43,5 +43,8 @@ g source https://android.googlesource.com/platform/manifest android-4.0.4_r2.1  
 g source https://android.googlesource.com/platform/manifest android-4.1.2_r2.1    android-4.1
 g source https://android.googlesource.com/platform/manifest android-4.2.2_r1.2b   android-4.2
 g source https://android.googlesource.com/platform/manifest android-4.3.1_r1      android-4.3
+g source https://android.googlesource.com/platform/manifest android-4.4_r1        android-4.4
 
 java -cp classes:lib/commons-io-1.4.jar:lib/junit-4.10.jar:../Installer/bin/classes UnpackBinaryResources $STORAGE/binaries
+
+java -cp classes:lib/commons-io-1.4.jar:lib/junit-4.10.jar:../Installer/bin/classes Unpack2sources

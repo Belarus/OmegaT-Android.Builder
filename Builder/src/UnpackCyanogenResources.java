@@ -23,7 +23,7 @@ public class UnpackCyanogenResources {
 
         // process cyanogen resources
         for (App app : translationInfo.getApp()) {
-            File outDir = new File(projectPath + "/source/" + app.getDirName());
+            File outDir = new File(projectPath + "/source-raw/" + app.getDirName());
             for (Cyanogen cy : app.getCyanogen()) {
                 String version = args[1];
                 if (cy.getOutSuffix() != null) {
@@ -44,7 +44,7 @@ public class UnpackCyanogenResources {
         }
     }
 
-    static void copyIfExist(File in, File out) throws IOException {
+    static void copyIfExist(File in, File out) throws Exception {
         if (in.exists()) {
             System.out.println("        " + in.getAbsolutePath() + " -> " + out.getAbsolutePath());
             FileUtils.copyFile(in, out);

@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
@@ -19,9 +21,12 @@ public class StAXDecoderReader2 {
 
     private Map<String, StyledString> strings = new HashMap<String, StyledString>();
     private Map<String, List<StyledString>> arrays = new HashMap<String, List<StyledString>>();
-    private Map<String, Map<String, StyledString>> plurals = new HashMap<String, Map<String, StyledString>>();
+    private Map<String, StyledString> plurals = new HashMap<String, StyledString>();
+    private Map<StyledString, Set<String>> nonTranslatable = new HashMap<>();
+    private Map<String, String> nonTranslatableIds = new HashMap<>();
 
     private StringBuilder currentString = new StringBuilder();
+    private boolean doNotTranslateNext;
 
     public StAXDecoderReader2() {
         factory = XMLInputFactory.newFactory();
@@ -35,17 +40,42 @@ public class StAXDecoderReader2 {
         return arrays;
     }
 
-    public Map<String, Map<String, StyledString>> getPlurals() {
+    public Map<String, StyledString> getPlurals() {
         return plurals;
     }
 
+    public Map<StyledString, Set<String>> getNonTranslatable() {
+        return nonTranslatable;
+    }
+
+    public Map<String, String> getNonTranslatableIds() {
+        return nonTranslatableIds;
+    }
+
+    void excludeFromTranslation(String id, StyledString str, String file) {
+        if (id.contains("#") || id.contains("/")) {
+            System.err.println("ID is not supported anywhere: " + id);
+        }
+        if (str == null || str.isEmpty()) {
+            return;
+        }
+        Set<String> ids = nonTranslatable.get(str);
+        if (ids == null) {
+            ids = new TreeSet<>();
+            nonTranslatable.put(str, ids);
+        }
+        ids.add(id);
+        nonTranslatableIds.put(id, file);
+    }
+
     public void read(File inFile) throws Exception {
-        XMLStreamReader rd = factory.createXMLStreamReader(new BufferedInputStream(new FileInputStream(inFile)));
+        XMLStreamReader rd = factory.createXMLStreamReader(new BufferedInputStream(
+                new FileInputStream(inFile)));
 
         String name = null;
         StyledString str = null;
         List<StyledString> array = null;
-        Map<String, StyledString> plural = null;
+        String pluralName = null;
         while (rd.hasNext()) {
             switch (rd.next()) {
             case XMLEvent.START_ELEMENT:
@@ -59,36 +89,76 @@ public class StAXDecoderReader2 {
                     }
                     str = read(rd);
                     Assert.assertNull("", strings.put(name, str));
+                    if (doNotTranslateNext || "false".equalsIgnoreCase(attrs.get("translate"))
+                            || "false".equalsIgnoreCase(attrs.get("translatable"))) {
+                        excludeFromTranslation(name, str, inFile.getPath());
+                    }
+                    doNotTranslateNext = false;
+                    pluralName = null;
                     break;
                 case "string-array":
-                    name = attrs.get("name");
+                    name = attrs.get("name") + "*array";
                     array = new ArrayList<StyledString>();
                     Assert.assertNull("", arrays.put(name, array));
+                    if ("false".equalsIgnoreCase(attrs.get("translate"))
+                            || "false".equalsIgnoreCase(attrs.get("translatable"))) {
+                        excludeFromTranslation(name, null, inFile.getPath());
+                    }
+                    break;
+                case "integer-array":
+                case "array":
+                    name = attrs.get("name") + "*array";
+                    if ("false".equalsIgnoreCase(attrs.get("translate"))
+                            || "false".equalsIgnoreCase(attrs.get("translatable"))) {
+                        excludeFromTranslation(name, null, inFile.getPath());
+                    }
                     break;
                 case "plurals":
-                    name = attrs.get("name");
-                    plural = new TreeMap<String, StyledString>();
-                    Assert.assertNull("", plurals.put(name, plural));
+                    pluralName = attrs.get("name");
                     break;
                 case "item":
                     String quantity = attrs.get("quantity");
                     str = read(rd);
-                    if (plural != null && quantity != null) {
-                        Assert.assertNull("", plural.put(quantity, str));
+                    if (pluralName != null && quantity != null) {
+                        String n = pluralName + '/' + quantity;
+                        Assert.assertNull("", plurals.put(n, str));
+                        if (doNotTranslateNext || "false".equalsIgnoreCase(attrs.get("translate"))
+                                || "false".equalsIgnoreCase(attrs.get("translatable"))) {
+                            excludeFromTranslation(n, str, inFile.getPath());
+                        }
                     } else if (array != null) {
                         array.add(str);
+                        if (doNotTranslateNext || "false".equalsIgnoreCase(attrs.get("translate"))
+                                || "false".equalsIgnoreCase(attrs.get("translatable"))) {
+                            excludeFromTranslation(name + "*array", str, inFile.getPath());
+                        }
                     }
+                    doNotTranslateNext = false;
+                    pluralName = null;
                     break;
                 case "resources":
                 case "skip":
-                case "integer-array":
-                case "array":
                 case "color":
                 case "add-resource":
                 case "eat-comment":
                     break;
                 default:
                     Assert.fail("Wrong XML element: " + rd.getLocalName());
+                }
+                break;
+            case XMLEvent.END_ELEMENT:
+                switch (rd.getLocalName()) {
+                case "string":
+                case "string-array":
+                case "plurals":
+                    doNotTranslateNext = false;
+                    pluralName = null;
+                }
+                break;
+            case XMLEvent.COMMENT:
+                if (rd.getText().toLowerCase().contains("do not translate")
+                        || rd.getText().toLowerCase().contains("don't translate")) {
+                    doNotTranslateNext = true;
                 }
                 break;
             }
@@ -123,7 +193,7 @@ public class StAXDecoderReader2 {
                 for (int i = 0;; i++) {
                     String aName = rd.getAttributeLocalName(i);
                     if (aName != null) {
-                        tagStart.tagName = tagStart.tagName+ ";" + aName + "=" + rd.getAttributeValue(i);
+                        tagStart.tagName = tagStart.tagName + ";" + aName + "=" + rd.getAttributeValue(i);
                     } else {
                         break;
                     }
@@ -142,6 +212,10 @@ public class StAXDecoderReader2 {
                 currentString.append(rd.getText());
                 break;
             case XMLEvent.COMMENT:
+                if (rd.getText().toLowerCase().contains("do not translate")
+                        || rd.getText().toLowerCase().contains("don't translate")) {
+                    doNotTranslateNext = true;
+                }
                 break;
             default:
                 Assert.fail("Wrong XML event");
