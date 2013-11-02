@@ -239,6 +239,9 @@ public class ResourceProcessor {
                                 // may be plural ?
                                 if (kv.key >= BAG_KEY_PLURALS_START && kv.key <= BAG_KEY_PLURALS_END) {
                                     name += '/' + QUANTITY_MAP[kv.key - BAG_KEY_PLURALS_START];
+                                } else {
+                                    // array ?
+                                    name += "*array";
                                 }
                                 // translate
                                 int newsi = translateString(translation, packageName, name, si);

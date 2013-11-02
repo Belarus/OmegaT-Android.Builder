@@ -2,8 +2,10 @@ package org.alex73.android;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 public class StyledString {
     public final static Tag[] NO_TAGS = new Tag[0];
@@ -27,6 +29,18 @@ public class StyledString {
         }
     }
 
+    public StyledString() {
+    }
+
+    public StyledString(StyledString str) {
+        this.raw = str.raw;
+        this.tags = str.tags;
+    }
+
+    public boolean isEmpty() {
+        return raw.length() == 0 && tags.length == 0;
+    }
+
     public boolean hasTags() {
         return tags.length > 0;
     }
@@ -35,12 +49,14 @@ public class StyledString {
         if (tags.length != o.tags.length) {
             return false;
         }
+        List<String> tagNames = new ArrayList<String>();
         for (int i = 0; i < tags.length; i++) {
-            if (!tags[i].tagName.equals(o.tags[i].tagName)) {
-                return false;
-            }
+            tagNames.add(tags[i].tagName);
         }
-        return true;
+        for (int i = 0; i < o.tags.length; i++) {
+            tagNames.remove(o.tags[i].tagName);
+        }
+        return tagNames.isEmpty();
     }
 
     public void sortTags() {
@@ -72,6 +88,8 @@ public class StyledString {
     }
 
     public void removeSpaces() {
+        if (true)
+            return;
         boolean wasSpace = true;
         for (int i = 0; i < raw.length(); i++) {
             if (raw.charAt(i) <= ' ') {
