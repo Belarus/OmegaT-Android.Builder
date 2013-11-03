@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
@@ -372,6 +373,7 @@ public class PackTranslation {
 
     static List<String> sourceTags = new ArrayList<>(), targetTags = new ArrayList<>();
     static Pattern RE_TAG_INDEXED = Pattern.compile("%[0-9]+\\$.+");
+    static Pattern RE_TAGS_OTHER = Pattern.compile("\\%d\\%\\%");
 
     static void extractTags(String str, List<String> tags) {
         tags.clear();
@@ -441,6 +443,10 @@ public class PackTranslation {
             } else {
                 pos++;
             }
+        }
+        Matcher m = RE_TAGS_OTHER.matcher(str);
+        while (m.find()) {
+            tags.add(m.group());
         }
     }
 }
