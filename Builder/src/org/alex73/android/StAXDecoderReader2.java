@@ -11,12 +11,15 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
 
 public class StAXDecoderReader2 {
+    static final Pattern RE_CHARLIMIT = Pattern.compile("CHAR LIMIT=([0-9]+)");
     protected XMLInputFactory factory;
 
     private Map<String, StyledString> strings = new HashMap<String, StyledString>();
@@ -27,6 +30,8 @@ public class StAXDecoderReader2 {
 
     private StringBuilder currentString = new StringBuilder();
     private boolean doNotTranslateNext;
+    private Integer charLimit;
+    List<String> charLimitErrors = new ArrayList<>();
 
     public StAXDecoderReader2() {
         factory = XMLInputFactory.newFactory();
@@ -50,6 +55,10 @@ public class StAXDecoderReader2 {
 
     public Map<String, String> getNonTranslatableIds() {
         return nonTranslatableIds;
+    }
+    
+    public List<String> getCharLimitErrors() {
+        return charLimitErrors;
     }
 
     void excludeFromTranslation(String id, StyledString str, String file) {
@@ -88,6 +97,12 @@ public class StAXDecoderReader2 {
                         name += '#' + product;
                     }
                     str = read(rd);
+                    if (charLimit != null && str.raw.length() > charLimit) {
+                        charLimitErrors.add("CharLimit error in "
+                                + inFile.getPath().replaceAll("^.+/(.+?)/.+?$", "$1") + " name=" + name + ": "
+                                + str.raw.length() + " but need " + charLimit + ": " + str.raw);
+                    }
+                    charLimit = null;
                     Assert.assertNull("", strings.put(name, str));
                     if (doNotTranslateNext || "false".equalsIgnoreCase(attrs.get("translate"))
                             || "false".equalsIgnoreCase(attrs.get("translatable"))) {
@@ -119,6 +134,12 @@ public class StAXDecoderReader2 {
                 case "item":
                     String quantity = attrs.get("quantity");
                     str = read(rd);
+                    if (charLimit != null && str.raw.length() > charLimit) {
+                        charLimitErrors.add("CharLimit error in "
+                                + inFile.getPath().replaceAll("^.+/(.+?)/.+?$", "$1") + " name=" + name + ": "
+                                + str.raw.length() + " but need " + charLimit + ": " + str.raw);
+                    }
+                    charLimit = null;
                     if (pluralName != null && quantity != null) {
                         String n = pluralName + '/' + quantity;
                         Assert.assertNull("", plurals.put(n, str));
@@ -154,11 +175,16 @@ public class StAXDecoderReader2 {
                     doNotTranslateNext = false;
                     pluralName = null;
                 }
+                charLimit = null;
                 break;
             case XMLEvent.COMMENT:
                 if (rd.getText().toLowerCase().contains("do not translate")
                         || rd.getText().toLowerCase().contains("don't translate")) {
                     doNotTranslateNext = true;
+                }
+                Matcher m = RE_CHARLIMIT.matcher(rd.getText());
+                if (m.find()) {
+                    charLimit = Integer.parseInt(m.group(1));
                 }
                 break;
             }

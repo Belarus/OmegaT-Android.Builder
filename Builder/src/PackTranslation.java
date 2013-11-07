@@ -6,7 +6,6 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +49,7 @@ public class PackTranslation {
     static Set<CharSequence> usedTags = new TreeSet<CharSequence>();
     static StringBuilder outstr = new StringBuilder(1000000);
     static Map<CharSequence, Integer> outstrpos = new HashMap<CharSequence, Integer>();
-    static List<String> tagsErrors = new ArrayList<>();
+    static Set<String> tagsErrors = new TreeSet<>();
 
     public static void main(String[] args) throws Exception {
         File target = new File(projectPath, "target");
@@ -139,7 +138,6 @@ public class PackTranslation {
             checkNonTranslatable(nonTranslatable, collected);
         }
 
-        Collections.sort(tagsErrors);
         FileUtils.writeLines(new File(projectPath, "tags-errors.txt"), "UTF-8", tagsErrors);
 
         System.out.println("countDefault = " + countDefault);
@@ -199,6 +197,7 @@ public class PackTranslation {
         rdIn.read(inFile);
         StAXDecoderReader2 rdOut = new StAXDecoderReader2();
         rdOut.read(outFile);
+        tagsErrors.addAll(rdOut.getCharLimitErrors());
         {
             Map<String, StyledString> in = rdIn.getStrings();
             Map<String, StyledString> out = rdOut.getStrings();
